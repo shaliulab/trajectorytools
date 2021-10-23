@@ -98,7 +98,15 @@ def get_rois(config):
     ct=np.array(eval(config["_roi"]["value"][0][0]))
     rois = [ROI(ct, i+1) for i in range(n_individuals)]
     return rois
-    
+
+
+    def get_output_filename(output, chunk):
+        if chunk is None:
+            return output
+        else:
+            return output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
+
+
 class ExportMonitor:
 
     def __init__(self, trajectories, store, output, *args, frame_range=None, **kwargs):
@@ -118,12 +126,6 @@ class ExportMonitor:
         return np.array(self._store._index.get_chunk_metadata(chunk)["frame_number"])[[0, -1]].tolist()
 
 
-    @staticmethod
-    def get_output_filename(output, chunk):
-        if chunk is None:
-            return output
-        else:
-            return output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
 
     def start(self, ncores=1):
 
@@ -133,6 +135,9 @@ class ExportMonitor:
         if ncores == 1:
             frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
             output = [self.start_single_thread(
+                trajectories=self._trajectories,
+                unit_trackers=self._unit_trackers,
+                output=self._output,
                 frame_range=frame_range,
                 store_filename=store_filename, chunk=None
             )]
@@ -140,17 +145,20 @@ class ExportMonitor:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
+                    trajectories=self._trajectories,
+                    unit_trackers=self._unit_trackers,
+                    output=self._output,
                     frame_range=frame_ranges[i],
                     store_filename=store_filename, chunk=i
                 ) for i in chunks
             )
         
 
-    def start_single_thread(self, frame_range, store_filename, chunk=None):
+    @staticmethod
+    def start_single_thread(trajectories, unit_trackers, output, frame_range, store_filename, chunk=None):
 
-        trajectories = self._trajectories[frame_range[0]:frame_range[1], :, :]
-        output=self.get_output_filename(self._output, chunk)
-        return 1
+        trajectories = trajectories[frame_range[0]:frame_range[1], :, :]
+        output=get_output_filename(output, chunk)
         thread_safe_store = imgstore.new_for_filename(store_filename)
         
         result_writer = EthoscopeExport.from_trajectories(
@@ -166,7 +174,7 @@ class ExportMonitor:
                 img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
                 t_ms = frame_timestamp
 
-                for j, track_u in enumerate(self._unit_trackers):
+                for j, track_u in enumerate(unit_trackers):
                     data_rows = track_u.track(t_ms, img) 
                     result_writer.write(t_ms, track_u.roi, data_rows)
 
