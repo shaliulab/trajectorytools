@@ -72,7 +72,7 @@ class EthoscopeExport(SQLiteResultWriter):
         with open(store_file, 'r') as f:
             store_metadata = yaml.load(f, Loader=yaml.SafeLoader)
 
-        store = imgstore.new_from_filename(store_file)
+        store = imgstore.new_for_filename(store_file)
 
         start_time = store_metadata["__store"]['created_utc']
         start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%f").timestamp()
