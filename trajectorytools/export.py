@@ -132,22 +132,24 @@ class ExportMonitor:
         if ncores == 1:
             frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
             output = [self.start_single_thread(
-                output=self.get_output_filename(self._output, i), frame_range=frame_range,
+                frame_range=frame_range,
                 store_filename=store_filename, chunk=None
             )]
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
-                    output=self.get_output_filename(self._output, i), frame_range=frame_ranges[i],
+                    frame_range=frame_ranges[i],
                     store_filename=store_filename, chunk=i
                 ) for i in self._store.chunks
             )
         
 
-    def start_single_thread(self, output, frame_range, store_filename, chunk=None):
+    def start_single_thread(self, frame_range, store_filename, chunk=None):
 
         trajectories = self._trajectories[frame_range[0]:frame_range[1], :, :]
+        
+        output=self.get_output_filename(self._output, chunk)
 
         thead_safe_store = imgstore.new_for_filename(os.path.join(store_filename, "metadata.yaml"))
 
