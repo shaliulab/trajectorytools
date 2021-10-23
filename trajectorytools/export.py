@@ -137,7 +137,8 @@ class ExportMonitor:
         result_writer = EthoscopeExport.from_trajectories(
             trajectories,
             self._store,
-            output
+            output=output,
+            path=path
         )
 
         thead_safe_store = imgstore.new_for_filename(os.path.join(self._store.filename, "metadata.yaml"))
