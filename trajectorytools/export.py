@@ -107,6 +107,10 @@ class ExportMonitor:
         self._store = store
         self._output = output
         self._frame_time_table = pd.DataFrame(store.get_frame_metadata())
+        
+        config = get_config(trajectories)
+        rois = get_rois(config)
+
         self._unit_trackers = [TrackingUnit(trajectories=trajectories, frame_time_table=self._frame_time_table, roi=r) for r in rois]
 
 
