@@ -303,7 +303,7 @@ class Trajectories(Trajectory):
             out = np.zeros([n, len(arrays)], dtype=dtype)
 
         #m = n / arrays[0].size
-        m = int(n / arrays[0].size) 
+        m = int(n / arrays[0].size)
         out[:,0] = np.repeat(arrays[0], m)
         if arrays[1:]:
             self.cartesian(arrays[1:], out=out[0:m, 1:])
@@ -311,7 +311,7 @@ class Trajectories(Trajectory):
             #for j in xrange(1, arrays[0].size):
                 out[j*m:(j+1)*m, 1:] = out[0:m, 1:]
         return out
-        
+
 
 
     def extend(self, other):
@@ -332,7 +332,8 @@ class Trajectories(Trajectory):
         dist=np.sqrt(
             np.diff(self.cartesian([last_seen[:,0], next_seen[:,0]]), axis=1)**2 +
             np.diff(self.cartesian([last_seen[:,1], next_seen[:,1]]), axis=1)**2
-        ).reshape((last_seen.shape[1], next_seen.shape[1]))
+        )
+        dist=dist.reshape((last_seen.shape[0], next_seen.shape[0]))
 
         correct_id=dist.argmin(axis=1)
 
@@ -343,7 +344,7 @@ class Trajectories(Trajectory):
                 other.__dict__[key][:, correct_id, :]
             ])
 
-        
+
     def _dict_to_save(self):
         traj_data = {key: self.__dict__[key] for key in self.keys_to_copy}
         params = self.params
