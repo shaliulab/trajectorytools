@@ -139,12 +139,6 @@ class EthoscopeExport(SQLiteResultWriter):
         rois = [ROI(ct, i+1) for i in range(n_individuals)]
         return rois
 
-    def flush(self, t, frame, frame_idx, result_writer):
-
-        result_writer.flush(t, frame, frame_idx=frame_idx)
-        return 0
-
-
     def start(self):
 
         for i in tqdm.tqdm(range(self._trajectories.s.shape[0])):
@@ -156,11 +150,7 @@ class EthoscopeExport(SQLiteResultWriter):
                 data_rows = track_u.track(i) 
                 self.write(t_ms, track_u.roi, data_rows)
 
-
-            result_writer=self # on the ethoscope, monitor and result_writer are separate
-            # but here they are the same entity
-
-            self.flush(t=t_ms, frame=img, frame_idx=i, result_writer=result_writer)
+            self.flush(t=t_ms, frame=img, frame_idx=i)
 
 
 def get_commit_hash():
