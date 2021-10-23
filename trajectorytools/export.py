@@ -222,6 +222,9 @@ class EthoscopeExport(SQLiteResultWriter):
             "selected_options": str(store_metadata["__store"]),
         }
 
+        config = get_config(trajectories)
+        rois = get_rois(config)
+
         result_writer = cls(
             trajectories, store,
             db_credentials, rois,
