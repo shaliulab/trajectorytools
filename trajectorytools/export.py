@@ -121,7 +121,7 @@ class ExportMonitor:
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
-                joblib.delayed(self.start_single_thread)(frame_ranges[i], i) for i in self._store.chunks)
+                joblib.delayed(self.start_single_thread)(frame_ranges[i], i) for i in self._store.chunks
             )
         
 
