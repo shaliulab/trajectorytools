@@ -59,7 +59,7 @@ class EthoscopeExport(SQLiteResultWriter):
         with open(os.path.join(experiment_folder, "metadata.yaml"), 'r') as f:
             store_metadata = yaml.load(f, Loader=yaml.SafeLoader)
 
-        start_time = store_metadata['created_utc'][0]
+        start_time = store_metadata["__store"]['created_utc'][0]
         start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%f").timestamp()
 
         machine_name = "FLYHOSTEL_1"
