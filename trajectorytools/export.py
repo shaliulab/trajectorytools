@@ -24,7 +24,7 @@ class TrackingUnit:
 
 
     def track(self, frame_idx, absolute=True):
-        individual_idx
+
         x_pos, y_pos = self._trajectory._s[frame_idx, :]
 
         if absolute:
