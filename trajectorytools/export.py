@@ -39,7 +39,7 @@ class ReadingTracker(BaseTracker):
     def _track(self, img, mask, t):
 
         frame_idx = self._store_frame_time.loc[self._store_frame_time["frame_time"] == t]["frame_number"].values[0]
-        x_pos, y_pos = self._trajectory._s[frame_idx, :]
+        x, y = self._trajectory._s[frame_idx, :]
 
         pos = x +1.0j * y
         if self._old_pos is None:
@@ -49,8 +49,8 @@ class ReadingTracker(BaseTracker):
 
         self.old_pos = pos
 
-        x_var = XPosVariable(int(round(x_pos)))
-        y_var = YPosVariable(int(round(y_pos)))
+        x_var = XPosVariable(int(round(x)))
+        y_var = YPosVariable(int(round(y)))
         distance = XYDistance(int(xy_dist))
 
         out = DataPoint([x_var, y_var, distance])
