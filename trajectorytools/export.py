@@ -123,11 +123,12 @@ def get_output_filename(output, chunk):
 
 class ExportMonitor:
 
-    def __init__(self, trajectories, store, output, *args, frame_range=None, **kwargs):
+    def __init__(self, trajectories, store, output, chunks *args, frame_range=None, **kwargs):
         
         self._trajectories = trajectories
         self._store = store
         self._output = output
+        self._chunks = chunks
         self._frame_time_table = pd.DataFrame(store.get_frame_metadata())
         
         config = get_config(trajectories)
@@ -144,7 +145,7 @@ class ExportMonitor:
     def start(self, ncores=1):
 
         store_filename = os.path.join(self._store.filename, "metadata.yaml")
-        chunks = self._store.chunks
+        chunks = self._chunks
 
         if ncores == 1:
             frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
