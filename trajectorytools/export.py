@@ -45,11 +45,13 @@ class ReadingTracker(BaseTracker):
         frame_idx = self._store_frame_time.loc[self._store_frame_time["frame_time"] == t]["frame_number"].values[0]
         x, y = self._trajectory._s[frame_idx, :]
 
+        # _, _, w_im, _ = self._roi.rectangle
+
         pos = x +1.0j * y
         if self._old_pos is None:
             xy_dist = 1        
         else:
-            xy_dist = round(math.log10(1. / float(w_im) + abs(pos - self._old_pos)) * 1000) 
+            xy_dist = round(math.log10(1. + abs(pos - self._old_pos)) * 1000) 
 
         self.old_pos = pos
 
