@@ -117,35 +117,47 @@ class ExportMonitor:
     def get_chunk_frame_range(self, chunk):
         return np.array(self._store._index.get_chunk_metadata(chunk)["frame_number"])[[0, -1]].tolist()
 
+
+    @staticmethod
+    def get_output_filename(output, chunk):
+        if chunk is None:
+            return output
+        else:
+            return output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
+
     def start(self, ncores=1):
+
+        store_filename = os.path.join(self._store.filename, "metadata.yaml")
 
         if ncores == 1:
             frame_range = _frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
-            output = [self.start_single_thread(frame_range=frame_range, chunk=None)]
+            output = [self.start_single_thread(
+                output=self.get_output_filename(i), frame_range=frame_range,
+                store_filename=store_filename, chunk=None
+            )]
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
-                delayed(self.start_single_thread)(frame_range=frame_ranges[i], chunk=i) for i in self._store.chunks
+                delayed(self.start_single_thread)(
+                    output=self.get_output_filename(i), frame_range=frame_ranges[i],
+                    store_filename=store_filename, chunk=i
+                ) for i in self._store.chunks
             )
         
 
-    def start_single_thread(self, frame_range, chunk=None):
-
-        if chunk is None:
-            output = self._output
-        else:
-            output = self._output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
+    def start_single_thread(self, output, frame_range, store_filename, chunk=None):
 
         trajectories = self._trajectories[frame_range[0]:frame_range[1], :, :]
 
+        thead_safe_store = imgstore.new_for_filename(os.path.join(store_filename, "metadata.yaml"))
+
         result_writer = EthoscopeExport.from_trajectories(
             trajectories,
-            self._store,
+            thread_safe_store,
             output=output,
             path=path
         )
 
-        thead_safe_store = imgstore.new_for_filename(os.path.join(self._store.filename, "metadata.yaml"))
         try:
             for i in tqdm.tqdm(range(*frame_range)):
 
