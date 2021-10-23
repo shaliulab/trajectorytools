@@ -200,9 +200,11 @@ class ExportMonitor:
         )
 
         try:
-            for i in range(*frame_range):
+            for frame_number in range(*frame_range):
 
-                img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
+                frame_timestamp = self._frame_time_table.loc[self._frame_time_table["frame_number"] == frame_number]["frame_time"].values[0]
+                # img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
+
                 t_ms = frame_timestamp
 
                 for j, track_u in enumerate(unit_trackers):
@@ -212,7 +214,7 @@ class ExportMonitor:
 
                     result_writer.write(t_ms, track_u.roi, data_rows)
 
-                result_writer.flush(t=t_ms, frame=img, frame_idx=i)
+                result_writer.flush(t=t_ms, frame=None, frame_idx=frame_number)
             
             return 0
         
@@ -221,8 +223,6 @@ class ExportMonitor:
             return 1
 
 
-    def get_image(self, idx):
-        return self._store.get_image(idx)
 
 
 
