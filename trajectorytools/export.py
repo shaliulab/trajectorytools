@@ -55,7 +55,7 @@ class ReadingTracker(BaseTracker):
 
         xy_dist = round(math.log10(1. + diff) * 1000)
 
-        self.old_pos = pos
+        self._old_pos = pos
 
         x_var = XPosVariable(int(round(x)))
         y_var = YPosVariable(int(round(y)))
