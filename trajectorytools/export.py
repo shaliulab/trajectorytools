@@ -2,6 +2,8 @@ import os.path
 import tempfile
 import json
 import datetime
+import logging
+logger = logging.getLogger(__name__)
 
 import yaml
 import sqlite3
@@ -29,7 +31,8 @@ class ReadingTracker(BaseTracker):
         self._trajectory = trajectory
         self._store = store
         self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
-        print(self._trajectory.s.shape)
+        self._old_pos = 0.0+0.0j
+
         super().__init__(roi, *args, **kwargs)
 
 
@@ -60,7 +63,7 @@ class ReadingTracker(BaseTracker):
 class TrackingUnit(EthoscopeTrackingUnit):
 
     def __init__(self, trajectories, store, roi, *args, **kwargs):
-        
+        logger.info("Initializing tracking unit")
         trajectory = trajectories[:, roi._idx-1, :]
         super().__init__(
             *args,
