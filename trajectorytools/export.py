@@ -59,8 +59,8 @@ class TrackingUnit(EthoscopeTrackingUnit):
 
     def __init__(self, trajectories, store, roi, *args, **kwargs):
         self._trajectory = trajectories[:, roi._idx-1, :]
-        super(EthoscopeTrackingUnit, self).__init__(
-            self, *args,
+        super().__init__(
+            *args,
             tracking_class=ReadingTracker, roi=roi, trajectories=trajectories, store=store, stimulator=None,
             **kwargs
         )
