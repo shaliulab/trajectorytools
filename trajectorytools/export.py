@@ -3,6 +3,7 @@ import tempfile
 import json
 import datetime
 import logging
+import traceback
 import math
 logger = logging.getLogger(__name__)
 
@@ -279,6 +280,7 @@ class ExportMonitor:
         
         except Exception as error:
             logger.error(error)
+            logger.error(traceback.print_exc())
             return 1
 
 
