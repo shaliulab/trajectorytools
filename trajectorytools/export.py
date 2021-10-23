@@ -151,8 +151,8 @@ class ExportMonitor:
         
         output=self.get_output_filename(self._output, chunk)
 
-        thead_safe_store = imgstore.new_for_filename(os.path.join(store_filename, "metadata.yaml"))
-
+        thead_safe_store = imgstore.new_for_filename(store_filename)
+        
         result_writer = EthoscopeExport.from_trajectories(
             trajectories,
             thread_safe_store,
