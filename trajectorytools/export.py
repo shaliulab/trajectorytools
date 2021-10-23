@@ -19,7 +19,7 @@ from trajectorytools import Trajectories
 from ethoscope.utils.io import SQLiteResultWriter 
 from ethoscope.core.roi import ROI
 from ethoscope.web_utils.helpers import get_machine_id
-from ethoscope.core.variables import XPosVariable, YPosVariable, XYDistance
+from ethoscope.core.variables import XPosVariable, YPosVariable, XYDistance, IsInferredVariable
 from ethoscope.core.data_point import DataPoint
 from ethoscope.core.tracking_unit import TrackingUnit as EthoscopeTrackingUnit
 from ethoscope.trackers.trackers import BaseTracker, NoPositionError
@@ -51,10 +51,60 @@ class ReadingTracker(BaseTracker):
         super().__init__(roi, *args, **kwargs)
 
 
-    def _find_position(self, img, mask, t):
-        return self._track(img=img, mask=mask, t=t)
+    def _find_position(self, t):
+        return self._track(t=t)
 
-    def _track(self, img, mask, t):
+    def track(self, t):
+        """
+        Locate the animal in a image, at a given time.
+
+        :param t: time in ms
+        :type t: int
+        :param img: the whole frame.
+        :type img: :class:`~numpy.ndarray`
+        :return: The position of the animal at time ``t``
+        :rtype: :class:`~ethoscope.core.data_point.DataPoint`
+        """
+
+        self._last_time_point = t
+        try:
+
+            points = self._find_position(t)
+            if not isinstance(points, list):
+                raise Exception("tracking algorithms are expected to return a LIST of DataPoints")
+
+            if len(points) == 0:
+                return []
+
+            # point = self.normalise_position(point)
+            self._last_non_inferred_time = t
+
+            for p in points:
+                p.append(IsInferredVariable(False))
+
+        except NoPositionError:
+            if len(self._positions) == 0:
+                return []
+            else:
+
+                points = self._infer_position(t)
+
+                if len(points) == 0:
+                    return []
+                for p in points:
+                    p.append(IsInferredVariable(True))
+
+        self._positions.append(points)
+        self._times.append(t)
+
+
+        if len(self._times) > 2 and (self._times[-1] - self._times[0]) > self._max_history_length:
+            self._positions.popleft()
+            self._times.popleft()
+
+        return points
+
+    def _track(self, t):
 
         frame_idx = self.get_frame_idx(t)
         x, y = self._trajectory._s[frame_idx, :]
@@ -217,7 +267,7 @@ class ExportMonitor:
                 t_ms = frame_timestamp
 
                 for j, track_u in enumerate(unit_trackers):
-                    data_rows = track_u.track(t_ms, img)
+                    data_rows = track_u.track(t_ms, img=None)
                     if len(data_rows) == 0:
                         continue
 
