@@ -135,7 +135,7 @@ class EthoscopeExport(SQLiteResultWriter):
 
             for j, track_u in enumerate(self._unit_trackers):
                 data_rows = track_u.track(i) 
-                result_writer.write(t_ms, track_u.roi, data_rows)
+                self.write(t_ms, track_u.roi, data_rows)
 
 
 def get_commit_hash():
