@@ -226,17 +226,17 @@ class ExportMonitor:
                 ncores=ncores
             )]
         else:
-            frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in chunks]
+            frame_ranges = ([None,] * chunks[0]) + [self.get_chunk_frame_range(chunk) for chunk in chunks]
             output = ProgressParallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
                     trajectories=self._trajectories,
                     unit_trackers=self._unit_trackers,
                     output=self._output,
                     frame_time_table=self._frame_time_table,
-                    frame_range=frame_ranges[i],
-                    store_filename=store_filename, chunk=i,
+                    frame_range=frame_ranges[chunk],
+                    store_filename=store_filename, chunk=chunk,
                     ncores=ncores
-                ) for i in chunks
+                ) for chunk in chunks
             )
         
 
