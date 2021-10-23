@@ -344,6 +344,10 @@ class Trajectories(Trajectory):
                 other.__dict__[key][:, correct_id, :]
             ])
 
+        # #viz
+        # dist /= (dist.max() / 255)
+        # plt.set_cmap("gray")
+        # plt.imshow(np.uint8(np.round(dist)))
 
     def _dict_to_save(self):
         traj_data = {key: self.__dict__[key] for key in self.keys_to_copy}
