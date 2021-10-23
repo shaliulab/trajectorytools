@@ -67,7 +67,7 @@ class EthoscopeExport(SQLiteResultWriter):
         machine_id = get_machine_id()
         version = get_commit_hash()
 
-        self._metadata = {
+        metadata = {
             "machine_id": machine_id,
             "machine_name": machine_name,
             "date_time": start_time,  # the camera start time is the reference 0
