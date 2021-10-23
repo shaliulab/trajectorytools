@@ -29,7 +29,7 @@ class ReadingTracker(BaseTracker):
         self._trajectories = trajectories
         self._store = store
         self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
-        super(self, ReadingTracker).__init__(self, roi, *args, **kwargs)
+        super().__init__(roi, *args, **kwargs)
 
 
     def _find_position(self, img, mask, t):
