@@ -1,4 +1,5 @@
 import logging
+logger = logging.getLogger(__name__)
 import warnings
 from copy import deepcopy
 
@@ -257,13 +258,93 @@ class Trajectories(Trajectory):
         )
 
 
+    @staticmethod
+    def cartesian(arrays, out=None):
+        """
+        https://stackoverflow.com/a/28684982/3541756
+
+        Generate a cartesian product of input arrays.
+
+        Parameters
+        ----------
+        arrays : list of array-like
+            1-D arrays to form the cartesian product of.
+        out : ndarray
+            Array to place the cartesian product in.
+
+        Returns
+        -------
+        out : ndarray
+            2-D array of shape (M, len(arrays)) containing cartesian products
+            formed of input arrays.
+
+        Examples
+        --------
+        >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
+        array([[1, 4, 6],
+            [1, 4, 7],
+            [1, 5, 6],
+            [1, 5, 7],
+            [2, 4, 6],
+            [2, 4, 7],
+            [2, 5, 6],
+            [2, 5, 7],
+            [3, 4, 6],
+            [3, 4, 7],
+            [3, 5, 6],
+            [3, 5, 7]])
+
+        """
+
+        arrays = [np.asarray(x) for x in arrays]
+        dtype = arrays[0].dtype
+
+        n = np.prod([x.size for x in arrays])
+        if out is None:
+            out = np.zeros([n, len(arrays)], dtype=dtype)
+
+        #m = n / arrays[0].size
+        m = int(n / arrays[0].size) 
+        out[:,0] = np.repeat(arrays[0], m)
+        if arrays[1:]:
+            cartesian(arrays[1:], out=out[0:m, 1:])
+            for j in range(1, arrays[0].size):
+            #for j in xrange(1, arrays[0].size):
+                out[j*m:(j+1)*m, 1:] = out[0:m, 1:]
+        return out
+        
+
+
     def extend(self, other):
+        """
+        Extend a trajectory using the data from the consecutive trajectory
+
+        Identities are propagated by assuming the position of the same animal on the last frame of the oldest
+        trajectory and the the first of the newest should be very similar i.e.
+        the animal that is closest on the new frame to a given animal on the old frame is the same animal
+
+        This may have to be proofread in extreme cases
+        where the animals move too fast or the framerate is too low
+        """
         last_seen = self._s[-1,:,:]
         next_seen = other._s[0,:, :]
-        dist = tt.norm(last_seen, next_seen)
-        import ipdb; ipdb.set_trace()
 
 
+        dist=np.sqrt(
+            np.diff(self.cartesian([x0[:,0], x1[:,0]]), axis=1)**2 +
+            np.diff(cartesian([x0[:,1], x1[:,1]]), axis=1)**2
+        ).reshape((last_seen.shape[1], next_seen.shape[1]))
+
+        correct_id=dist.argmin(axis=1)
+
+        for k in self.keys_to_copy:
+            logger.info(f"Extending {k} key")
+            self.__dict__[key]=np.concatenate([
+                self.__dict__[key],
+                other.__dict__[key][:, correct_id, :]
+            ])
+
+        
     def _dict_to_save(self):
         traj_data = {key: self.__dict__[key] for key in self.keys_to_copy}
         params = self.params
