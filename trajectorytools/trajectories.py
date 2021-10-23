@@ -244,13 +244,6 @@ class Trajectory:
     def distance_to_origin(self):
         return self.distance_to(np.zeros(2))
 
-    def extend(self, other):
-        last_seen = self._s[-1,:,:]
-        next_seen = other._s[0,:, :]
-        dist = tt.norm(last_seen, next_seen)
-        import ipdb; ipdb.set_trace()
-
-
 
 class CenterMassTrajectory(Trajectory):
     own_params = False  # Parameters are shared with parent
@@ -262,6 +255,14 @@ class Trajectories(Trajectory):
         self.center_of_mass = calculate_center_of_mass(
             trajectories, self.params
         )
+
+
+    def extend(self, other):
+        last_seen = self._s[-1,:,:]
+        next_seen = other._s[0,:, :]
+        dist = tt.norm(last_seen, next_seen)
+        import ipdb; ipdb.set_trace()
+
 
     def _dict_to_save(self):
         traj_data = {key: self.__dict__[key] for key in self.keys_to_copy}
