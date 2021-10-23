@@ -57,7 +57,7 @@ class ReadingTracker(BaseTracker):
 
 class TrackingUnit(EthoscopeTrackingUnit):
 
-    def __init__(self, trajectories, store, roi):
+    def __init__(self, trajectories, store, roi, *args, **kwargs):
         self._trajectory = trajectories[:, roi._idx-1, :]
         super().__init__(
             self, *args,
