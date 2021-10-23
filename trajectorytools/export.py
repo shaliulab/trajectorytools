@@ -8,7 +8,7 @@ import tqdm
 
 from trajectorytools import Trajectories
 from ethoscope.utils.io import SQLiteResultWriter 
-from ethoscope.core.rois import ROI
+from ethoscope.core.roi import ROI
 from ethoscope.web_utils.helpers import get_machine_id
 from ethoscope.core.variables import XPosVariable, YPosVariable
 from ethoscope.core.data_point import DataPoint
