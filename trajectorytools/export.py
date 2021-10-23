@@ -10,6 +10,7 @@ from joblib import Parallel, delayed
 import yaml
 import sqlite3
 import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import imgstore
 import pandas as pd
@@ -21,10 +22,23 @@ from ethoscope.web_utils.helpers import get_machine_id
 from ethoscope.core.variables import XPosVariable, YPosVariable, XYDistance
 from ethoscope.core.data_point import DataPoint
 from ethoscope.core.tracking_unit import TrackingUnit as EthoscopeTrackingUnit
-from ethoscope.trackers.trackers import BaseTracker
+from ethoscope.trackers.trackers import BaseTracker, NoPositionError
 # from ethoscope.stimulators.stimulators import DefaultStimulator
 # from ethoscope.hardware.interfaces.interfaces import HardwareConnection
 
+
+class ProgressParallel(Parallel):
+    #https://stackoverflow.com/a/61027781/3541756
+
+    def __call__(self, *args, **kwargs):
+        with tqdm() as self._pbar:
+            return joblib.Parallel.__call__(self, *args, **kwargs)
+
+    def print_progress(self, *args, **kwargs):
+        self._pbar.total = self.n_dispatched_tasks
+        self._pbar.n = self.n_completed_tasks
+        self._pbar.refresh()
+        super().print_progress(*args, **kwargs)
 
 
 class ReadingTracker(BaseTracker):
@@ -32,7 +46,7 @@ class ReadingTracker(BaseTracker):
     def __init__(self, roi, trajectory, frame_time_table, *args, **kwargs):
         self._trajectory = trajectory
         self._frame_time_table = frame_time_table
-        self._old_pos = 0.0+0.0j
+        self._old_pos = None
 
         super().__init__(roi, *args, **kwargs)
 
@@ -49,13 +63,13 @@ class ReadingTracker(BaseTracker):
 
         pos = x +1.0j * y
         if self._old_pos is None:
-            diff = 0
+            self._old_pos = pos
+            raise NoPositionError
         else:
             diff = abs(pos - self._old_pos)
 
         xy_dist = round(math.log10(1. + diff) * 1000)
 
-        self._old_pos = pos
 
         x_var = XPosVariable(int(round(x)))
         y_var = YPosVariable(int(round(y)))
@@ -143,7 +157,7 @@ class ExportMonitor:
             )]
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in chunks]
-            output = Parallel(n_jobs=ncores, verbose=10)(
+            output = ProgressParallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
                     trajectories=self._trajectories,
                     unit_trackers=self._unit_trackers,
@@ -169,7 +183,7 @@ class ExportMonitor:
         )
 
         try:
-            for i in tqdm.tqdm(range(*frame_range)):
+            for i in range(*frame_range):
 
                 img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
                 t_ms = frame_timestamp
