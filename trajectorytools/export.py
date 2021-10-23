@@ -189,7 +189,10 @@ class ExportMonitor:
                 t_ms = frame_timestamp
 
                 for j, track_u in enumerate(unit_trackers):
-                    data_rows = track_u.track(t_ms, img) 
+                    data_rows = track_u.track(t_ms, img)
+                    if len(data_rows) == 0:
+                        continue
+
                     result_writer.write(t_ms, track_u.roi, data_rows)
 
                 result_writer.flush(t=t_ms, frame=img, frame_idx=i)
