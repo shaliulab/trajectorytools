@@ -22,6 +22,10 @@ class TrackingUnit:
         self._trajectory = trajectories[:, roi._idx-1, :]
         self._roi = roi
 
+    @property
+    def roi(self):
+        return self._roi
+
 
     def track(self, frame_idx, absolute=True):
 
