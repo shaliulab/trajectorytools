@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 import yaml
 import sqlite3
 import tqdm
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm as tqdm_auto
 import numpy as np
 import imgstore
 import pandas as pd
@@ -31,7 +31,7 @@ class ProgressParallel(Parallel):
     #https://stackoverflow.com/a/61027781/3541756
 
     def __call__(self, *args, **kwargs):
-        with tqdm() as self._pbar:
+        with tqdm_auto() as self._pbar:
             return Parallel.__call__(self, *args, **kwargs)
 
     def print_progress(self, *args, **kwargs):
@@ -170,7 +170,9 @@ class ExportMonitor:
                 unit_trackers=self._unit_trackers,
                 output=self._output,
                 frame_range=frame_range,
-                store_filename=store_filename, chunk=None
+                frame_time_table=self._frame_time_table,
+                store_filename=store_filename, chunk=None,
+                ncores=ncores
             )]
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in chunks]
@@ -179,14 +181,16 @@ class ExportMonitor:
                     trajectories=self._trajectories,
                     unit_trackers=self._unit_trackers,
                     output=self._output,
+                    frame_time_table=self._frame_time_table,
                     frame_range=frame_ranges[i],
-                    store_filename=store_filename, chunk=i
+                    store_filename=store_filename, chunk=i,
+                    ncores=ncores
                 ) for i in chunks
             )
         
 
     @staticmethod
-    def start_single_thread(trajectories, unit_trackers, output, frame_range, store_filename, chunk=None):
+    def start_single_thread(trajectories, unit_trackers, output, frame_range, frame_time_table, store_filename, chunk=None, ncores=1):
 
         trajectories = trajectories[frame_range[0]:frame_range[1], :, :]
         output=get_output_filename(output, chunk)
@@ -199,10 +203,15 @@ class ExportMonitor:
             path=output
         )
 
-        try:
-            for frame_number in range(*frame_range):
+        if ncores==1:
+            iterable = tqdm.tqdm(range(*frame_range))
+        else:
+            iterable = range(*frame_range)
 
-                frame_timestamp = self._frame_time_table.loc[self._frame_time_table["frame_number"] == frame_number]["frame_time"].values[0]
+        try:
+            for frame_number in iterable:
+
+                frame_timestamp = frame_time_table.loc[frame_time_table["frame_number"] == frame_number]["frame_time"].values[0]
                 # img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
 
                 t_ms = frame_timestamp
