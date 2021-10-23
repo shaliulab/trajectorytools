@@ -46,7 +46,7 @@ class EthoscopeExport(SQLiteResultWriter):
         self._trajectories = trajectories
         config = EthoscopeExport.get_config(trajectories)
         rois = EthoscopeExport.get_rois(config)        
-        self._unit_trackers = [TrackingUnit(trajectories, r, *args, **kwargs) for r in rois]
+        self._unit_trackers = [TrackingUnit(trajectories, r) for r in rois]
         super().__init__(*args, **kwargs)
 
 
