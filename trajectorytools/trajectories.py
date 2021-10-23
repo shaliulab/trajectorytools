@@ -258,8 +258,7 @@ class Trajectories(Trajectory):
         )
 
 
-    @staticmethod
-    def cartesian(arrays, out=None):
+    def cartesian(self, arrays, out=None):
         """
         https://stackoverflow.com/a/28684982/3541756
 
@@ -307,7 +306,7 @@ class Trajectories(Trajectory):
         m = int(n / arrays[0].size) 
         out[:,0] = np.repeat(arrays[0], m)
         if arrays[1:]:
-            cartesian(arrays[1:], out=out[0:m, 1:])
+            self.cartesian(arrays[1:], out=out[0:m, 1:])
             for j in range(1, arrays[0].size):
             #for j in xrange(1, arrays[0].size):
                 out[j*m:(j+1)*m, 1:] = out[0:m, 1:]
