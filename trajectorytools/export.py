@@ -238,6 +238,8 @@ class ExportMonitor:
                     ncores=ncores
                 ) for chunk in chunks
             )
+
+
         
 
     @staticmethod
@@ -247,7 +249,7 @@ class ExportMonitor:
         output=get_output_filename(output, chunk)
         thread_safe_store = imgstore.new_for_filename(store_filename)
         
-        result_writer = EthoscopeExport.from_trajectories(
+        rw = EthoscopeExport.from_trajectories(
             trajectories,
             thread_safe_store,
             output=output,
@@ -259,29 +261,31 @@ class ExportMonitor:
         else:
             iterable = range(*frame_range)
 
-        try:
-            for frame_number in iterable:
+        with rw as result_writer:
 
-                frame_timestamp = frame_time_table.loc[frame_time_table["frame_number"] == frame_number]["frame_time"].values[0]
-                # img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
+            try:
+                for frame_number in iterable:
 
-                t_ms = frame_timestamp
+                    frame_timestamp = frame_time_table.loc[frame_time_table["frame_number"] == frame_number]["frame_time"].values[0]
+                    # img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
 
-                for j, track_u in enumerate(unit_trackers):
-                    data_rows = track_u.track(t_ms, img=None)
-                    if len(data_rows) == 0:
-                        continue
+                    t_ms = frame_timestamp
 
-                    result_writer.write(t_ms, track_u.roi, data_rows)
+                    for j, track_u in enumerate(unit_trackers):
+                        data_rows = track_u.track(t_ms, img=None)
+                        if len(data_rows) == 0:
+                            continue
 
-                result_writer.flush(t=t_ms, frame=None, frame_idx=frame_number)
+                        result_writer.write(t_ms, track_u.roi, data_rows)
+
+                    result_writer.flush(t=t_ms, frame=None, frame_idx=frame_number)
+                
+                return 0
             
-            return 0
-        
-        except Exception as error:
-            logger.error(error)
-            logger.error(traceback.print_exc())
-            return 1
+            except Exception as error:
+                logger.error(error)
+                logger.error(traceback.print_exc())
+                return 1
 
 
 
