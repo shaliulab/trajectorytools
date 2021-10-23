@@ -163,7 +163,7 @@ class ExportMonitor:
         try:
             for i in tqdm.tqdm(range(*frame_range)):
 
-                img, (frame_number, frame_timestamp) = thead_safe_store.get_image(i)
+                img, (frame_number, frame_timestamp) = thread_safe_store.get_image(i)
                 t_ms = frame_timestamp
 
                 for j, track_u in enumerate(self._unit_trackers):
