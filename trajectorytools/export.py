@@ -130,7 +130,7 @@ class ExportMonitor:
         store_filename = os.path.join(self._store.filename, "metadata.yaml")
 
         if ncores == 1:
-            frame_range = _frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
+            frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
             output = [self.start_single_thread(
                 output=self.get_output_filename(i), frame_range=frame_range,
                 store_filename=store_filename, chunk=None
