@@ -3,6 +3,7 @@ import tempfile
 import json
 import datetime
 import logging
+import math
 logger = logging.getLogger(__name__)
 
 import yaml
@@ -16,7 +17,7 @@ from trajectorytools import Trajectories
 from ethoscope.utils.io import SQLiteResultWriter 
 from ethoscope.core.roi import ROI
 from ethoscope.web_utils.helpers import get_machine_id
-from ethoscope.core.variables import XPosVariable, YPosVariable
+from ethoscope.core.variables import XPosVariable, YPosVariable, XYDistance
 from ethoscope.core.data_point import DataPoint
 from ethoscope.core.tracking_unit import TrackingUnit as EthoscopeTrackingUnit
 from ethoscope.trackers.trackers import BaseTracker
@@ -48,7 +49,7 @@ class ReadingTracker(BaseTracker):
         if self._old_pos is None:
             xy_dist = 1        
         else:
-            xy_dist = round(log10(1. / float(w_im) + abs(pos - self._old_pos)) * 1000) 
+            xy_dist = round(math.log10(1. / float(w_im) + abs(pos - self._old_pos)) * 1000) 
 
         self.old_pos = pos
 
