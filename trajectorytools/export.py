@@ -80,7 +80,7 @@ class EthoscopeExport(SQLiteResultWriter):
             "frame_height": store_metadata["__store"]['imgshape'][0],
             "version": version,
             "experimental_info": "",
-            "selected_options": store_metadata["__store"],
+            "selected_options": str(store_metadata["__store"]),
         }
 
         result_writer = cls(
