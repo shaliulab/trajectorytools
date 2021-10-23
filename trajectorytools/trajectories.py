@@ -338,7 +338,7 @@ class Trajectories(Trajectory):
         correct_id=dist.argmin(axis=1)
 
         for key in self.keys_to_copy:
-            logger.info(f"Extending {k} key")
+            logger.info(f"Extending {key} key")
             self.__dict__[key]=np.concatenate([
                 self.__dict__[key],
                 other.__dict__[key][:, correct_id, :]
