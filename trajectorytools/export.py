@@ -49,9 +49,11 @@ class ReadingTracker(BaseTracker):
 
         pos = x +1.0j * y
         if self._old_pos is None:
-            xy_dist = 1        
+            diff = 0
         else:
-            xy_dist = round(math.log10(1. + abs(pos - self._old_pos)) * 1000) 
+            diff = abs(pos - self._old_pos)
+
+        xy_dist = round(math.log10(1. + diff) * 1000)
 
         self.old_pos = pos
 
