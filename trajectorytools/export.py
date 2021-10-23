@@ -55,7 +55,7 @@ class ReadingTracker(BaseTracker):
     def _find_position(self, t):
         return self._track(t=t)
 
-    def track(self, t):
+    def track(self, t, img=None):
         """
         Locate the animal in a image, at a given time.
 
