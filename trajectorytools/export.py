@@ -6,6 +6,7 @@ import logging
 import math
 logger = logging.getLogger(__name__)
 
+from joblib import Parallel, delayed
 import yaml
 import sqlite3
 import tqdm
@@ -28,10 +29,9 @@ from ethoscope.trackers.trackers import BaseTracker
 
 class ReadingTracker(BaseTracker):
 
-    def __init__(self, roi, trajectory, store, *args, **kwargs):
+    def __init__(self, roi, trajectory, frame_time_table, *args, **kwargs):
         self._trajectory = trajectory
-        self._store = store
-        self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
+        self._frame_time_table = frame_time_table
         self._old_pos = 0.0+0.0j
 
         super().__init__(roi, *args, **kwargs)
@@ -42,7 +42,7 @@ class ReadingTracker(BaseTracker):
 
     def _track(self, img, mask, t):
 
-        frame_idx = self._store_frame_time.loc[self._store_frame_time["frame_time"] == t]["frame_number"].values[0]
+        frame_idx = self._frame_time_table.loc[self._frame_time_table["frame_time"] == t]["frame_number"].values[0]
         x, y = self._trajectory._s[frame_idx, :]
 
         # _, _, w_im, _ = self._roi.rectangle
@@ -67,50 +67,118 @@ class ReadingTracker(BaseTracker):
 
 class TrackingUnit(EthoscopeTrackingUnit):
 
-    def __init__(self, trajectories, store, roi, *args, **kwargs):
+    def __init__(self, trajectories, frame_time_table, roi, *args, **kwargs):
         logger.info("Initializing tracking unit")
         trajectory = trajectories[:, roi._idx-1, :]
         super().__init__(
             *args,
-            tracking_class=ReadingTracker, roi=roi, trajectory=trajectory, store=store, stimulator=None,
+            tracking_class=ReadingTracker, roi=roi, trajectory=trajectory, frame_time_table=frame_time_table, stimulator=None,
             **kwargs
         )
         
+def get_config(tr: Trajectories):
+    """
+    Read the idtrackerai config of the experiment whose trajectories are being analyzed
+    """
+    experiment_folder = os.path.join("/", *tr.params["path"].strip("/").split("/")[::-1][3:][::-1])
+    date_time = os.path.basename(experiment_folder)
+    config_file = os.path.join(experiment_folder, date_time + ".conf")
 
-class EthoscopeExport(SQLiteResultWriter):
+    with open(config_file, "r") as fh:
+        config = json.load(fh)
+    return config
 
-    def __init__(self, trajectories, store, *args, frame_range=None, **kwargs):
+def get_rois(config):
+    """
+    Return a collection of identical ROIs, one per animal,
+    to make the data compatible with ethoscope
+    """
 
+    n_individuals = int(config["_nblobs"]["value"])
+    ct=np.array(eval(config["_roi"]["value"][0][0]))
+    rois = [ROI(ct, i+1) for i in range(n_individuals)]
+    return rois
+    
+class ExportMonitor:
+
+    def __init__(self, trajectories, store, output, *args, frame_range=None, **kwargs):
+        
         self._trajectories = trajectories
         self._store = store
-        config = EthoscopeExport.get_config(trajectories)
-        rois = EthoscopeExport.get_rois(config)
-        self._unit_trackers = [TrackingUnit(trajectories=trajectories, store=store, roi=r) for r in rois]
+        self._output = output
+        self._frame_time_table = pd.DataFrame(store.get_frame_metadata())
+        self._unit_trackers = [TrackingUnit(trajectories=trajectories, frame_time_table=self._frame_time_table, roi=r) for r in rois]
+
+
+    def get_chunk_frame_range(self, chunk):
+        return np.array(self._store._index.get_chunk_metadata(chunk)["frame_number"])[[0, -1]].tolist()
+
+    def start(self, ncores=1):
+
+        if ncores == 1:
+            frame_range = _frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
+            output = [self.start_single_thread(frame_range=frame_range, None)]
+        else:
+            frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
+            output = Parallel(n_jobs=ncores, verbose=10)(
+                joblib.delayed(self.start_single_thread)(frame_ranges[i], i) for i in self._store.chunks)
+            )
         
-        if frame_range is None:
-            frame_range = (0, self._trajectories.s.shape[0]+1)
+
+    def start_single_thread(self, frame_range, chunk=None):
+
+        if chunk is None:
+            output = self._output
+        else:
+            output = self._output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
+
+        trajectories = self._trajectories[frame_range[0]:frame_range[1], :, :]
+
+        result_writer = EthoscopeExport.from_trajectories(
+            trajectories,
+            self._store,
+            output
+        )
+
+        thead_safe_store = imgstore.new_for_filename(os.path.join(self._store.filename, "metadata.yaml"))
+        try:
+            for i in tqdm.tqdm(range(*frame_range)):
+
+                img, (frame_number, frame_timestamp) = thead_safe_store.get_image(i)
+                t_ms = frame_timestamp
+
+                for j, track_u in enumerate(self._unit_trackers):
+                    data_rows = track_u.track(t_ms, img) 
+                    result_writer.write(t_ms, track_u.roi, data_rows)
+
+                result_writer.flush(t=t_ms, frame=img, frame_idx=i)
+            
+            return 0
         
-        self._frame_range = frame_range
-        super().__init__(*args, **kwargs)
+        except Exception as error:
+            logger.error(error)
+            return 1
 
 
     def get_image(self, idx):
         return self._store.get_image(idx)
 
 
+
+class EthoscopeExport(SQLiteResultWriter):
+
+    def __init__(self, trajectories, store, *args, frame_range=None, **kwargs):
+
+        self._trajectories = trajectories
+        super().__init__(*args, **kwargs)
+
+
     @classmethod
-    def from_trajectories(cls, trajectories, output, *args, **kwargs):
+    def from_trajectories(cls, trajectories, store, output, *args, **kwargs):
 
-        experiment_folder = os.path.join("/", *trajectories.params["path"].strip("/").split("/")[::-1][3:][::-1])
-        config = cls.get_config(trajectories)
-        rois = cls.get_rois(config)
-
-        store_file = os.path.join(experiment_folder, "metadata.yaml")
-
+        store_file = os.path.join(store.filename, "metadata.yaml")
         with open(store_file, 'r') as f:
             store_metadata = yaml.load(f, Loader=yaml.SafeLoader)
-
-        store = imgstore.new_for_filename(store_file)
 
         start_time = store_metadata["__store"]['created_utc']
         start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%f").timestamp()
@@ -151,46 +219,6 @@ class EthoscopeExport(SQLiteResultWriter):
     def release(self):
         self._queue.put("DONE")
 
-
-    @classmethod
-    def get_config(cls, tr: Trajectories):
-        """
-        Read the idtrackerai config of the experiment whose trajectories are being analyzed
-        """
-        experiment_folder = os.path.join("/", *tr.params["path"].strip("/").split("/")[::-1][3:][::-1])
-        date_time = os.path.basename(experiment_folder)
-        config_file = os.path.join(experiment_folder, date_time + ".conf")
-
-        with open(config_file, "r") as fh:
-            config = json.load(fh)
-        return config
-
-    @classmethod
-    def get_rois(cls, config):
-        """
-        Return a collection of identical ROIs, one per animal,
-        to make the data compatible with ethoscope
-        """
-
-        n_individuals = int(config["_nblobs"]["value"])
-        ct=np.array(eval(config["_roi"]["value"][0][0]))
-        rois = [ROI(ct, i+1) for i in range(n_individuals)]
-        return rois
-
-    def start(self):
-
-        frame_range = self._frame_range
-
-        for i in tqdm.tqdm(range(*frame_range)):
-
-            img, (frame_number, frame_timestamp) = self._store.get_image(i)
-            t_ms = frame_timestamp
-
-            for j, track_u in enumerate(self._unit_trackers):
-                data_rows = track_u.track(t_ms, img) 
-                self.write(t_ms, track_u.roi, data_rows)
-
-            self.flush(t=t_ms, frame=img, frame_idx=i)
 
 
 def get_commit_hash():
