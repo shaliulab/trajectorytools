@@ -40,7 +40,7 @@ class TrackingUnit:
         y_var = YPosVariable(int(round(y_pos)))
         out = DataPoint([x_var, y_var])
 
-        return out
+        return [out]
 
 
 class EthoscopeExport(SQLiteResultWriter):
