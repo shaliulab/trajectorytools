@@ -123,7 +123,7 @@ def get_output_filename(output, chunk):
 
 class ExportMonitor:
 
-    def __init__(self, trajectories, store, output, chunks *args, frame_range=None, **kwargs):
+    def __init__(self, trajectories, store, output, chunks, *args, frame_range=None, **kwargs):
         
         self._trajectories = trajectories
         self._store = store
