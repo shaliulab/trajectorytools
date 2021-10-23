@@ -113,7 +113,7 @@ class EthoscopeExport(SQLiteResultWriter):
         to make the data compatible with ethoscope
         """
 
-        n_individuals = config["_nblobs"]["value"]
+        n_individuals = int(config["_nblobs"]["value"])
         ct=np.array(eval(config["_roi"]["value"][0][0]))
         rois = [ROI(ct, i+1) for i in range(n_individuals)]
         return rois
