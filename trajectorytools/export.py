@@ -132,14 +132,14 @@ class ExportMonitor:
         if ncores == 1:
             frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
             output = [self.start_single_thread(
-                output=self.get_output_filename(i), frame_range=frame_range,
+                output=self.get_output_filename(self._output, i), frame_range=frame_range,
                 store_filename=store_filename, chunk=None
             )]
         else:
             frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
-                    output=self.get_output_filename(i), frame_range=frame_ranges[i],
+                    output=self.get_output_filename(self._output, i), frame_range=frame_ranges[i],
                     store_filename=store_filename, chunk=i
                 ) for i in self._store.chunks
             )
