@@ -331,8 +331,8 @@ class Trajectories(Trajectory):
 
 
         dist=np.sqrt(
-            np.diff(self.cartesian([x0[:,0], x1[:,0]]), axis=1)**2 +
-            np.diff(cartesian([x0[:,1], x1[:,1]]), axis=1)**2
+            np.diff(self.cartesian([last_seen[:,0], next_seen[:,0]]), axis=1)**2 +
+            np.diff(cartesian([last_seen[:,1], next_seen[:,1]]), axis=1)**2
         ).reshape((last_seen.shape[1], next_seen.shape[1]))
 
         correct_id=dist.argmin(axis=1)
