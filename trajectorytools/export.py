@@ -57,9 +57,9 @@ class ReadingTracker(BaseTracker):
 
 class TrackingUnit(EthoscopeTrackingUnit):
 
-    def __init__(self, trajectories, store, roi, *args, **kwargs):
+    def __init__(self, trajectories, store, roi, *args, **kwargs)
         self._trajectory = trajectories[:, roi._idx-1, :]
-        super().__init__(
+        super(EthoscopeTrackingUnit, self).__init__(
             self, *args,
             tracking_class=ReadingTracker, roi=roi, trajectories=trajectories, store=store, stimulator=None,
             **kwargs
@@ -74,7 +74,7 @@ class EthoscopeExport(SQLiteResultWriter):
         self._store = store
         config = EthoscopeExport.get_config(trajectories)
         rois = EthoscopeExport.get_rois(config)
-        self._unit_trackers = [TrackingUnit(trajectories, store, r) for r in rois]
+        self._unit_trackers = [TrackingUnit(trajectories=trajectories, store=store, roi=r) for r in rois]
         
         if frame_range is None:
             frame_range = (0, self._trajectories.s.shape[0]+1)
