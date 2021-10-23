@@ -156,6 +156,10 @@ class EthoscopeExport(SQLiteResultWriter):
                 data_rows = track_u.track(i) 
                 self.write(t_ms, track_u.roi, data_rows)
 
+
+            result_writer=self # on the ethoscope, monitor and result_writer are separate
+            # but here they are the same entity
+
             self.flush(t=t_ms, frame=img, frame_idx=i, result_writer=result_writer)
 
 
