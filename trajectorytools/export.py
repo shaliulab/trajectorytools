@@ -92,6 +92,7 @@ class EthoscopeExport(SQLiteResultWriter):
         self._queue.put("DONE")
 
 
+    @classmethod
     def get_config(cls, tr: Trajectories):
         """
         Read the idtrackerai config of the experiment whose trajectories are being analyzed
@@ -104,7 +105,7 @@ class EthoscopeExport(SQLiteResultWriter):
             config = json.load(fh)
         return config
 
-
+    @classmethod
     def get_rois(cls, config):
         """
         Return a collection of identical ROIs, one per animal,
