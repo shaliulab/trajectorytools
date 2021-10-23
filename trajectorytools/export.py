@@ -51,7 +51,7 @@ class EthoscopeExport(SQLiteResultWriter):
 
 
     @classmethod
-    def from_trajectories(cls, trajectories, output):
+    def from_trajectories(cls, trajectories, output, *args, **kwargs):
 
         experiment_folder = os.path.join("/", *trajectories.params["path"].strip("/").split("/")[::-1][3:][::-1])
         config = cls.get_config(trajectories)
@@ -89,7 +89,8 @@ class EthoscopeExport(SQLiteResultWriter):
             metadata=metadata,
             take_frame_shots=False, sensor=None,
             make_dam_like_table=False,
-            period=10
+            period=10,
+            *args, **kwargs
         )
 
         return result_writer
