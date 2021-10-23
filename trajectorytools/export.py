@@ -25,10 +25,11 @@ from ethoscope.trackers.trackers import BaseTracker
 
 class ReadingTracker(BaseTracker):
 
-    def __init__(self, roi, trajectories, store, *args, **kwargs):
-        self._trajectories = trajectories
+    def __init__(self, roi, trajectory, store, *args, **kwargs):
+        self._trajectory = trajectory
         self._store = store
         self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
+        print(self._trajectory.s.shape)
         super().__init__(roi, *args, **kwargs)
 
 
@@ -59,10 +60,11 @@ class ReadingTracker(BaseTracker):
 class TrackingUnit(EthoscopeTrackingUnit):
 
     def __init__(self, trajectories, store, roi, *args, **kwargs):
-        self._trajectory = trajectories[:, roi._idx-1, :]
+        
+        trajectory = trajectories[:, roi._idx-1, :]
         super().__init__(
             *args,
-            tracking_class=ReadingTracker, roi=roi, trajectories=trajectories, store=store, stimulator=None,
+            tracking_class=ReadingTracker, roi=roi, trajectory=trajectory, store=store, stimulator=None,
             **kwargs
         )
         
