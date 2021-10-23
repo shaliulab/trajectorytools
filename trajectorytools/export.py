@@ -7,6 +7,7 @@ import yaml
 import sqlite3
 import tqdm
 import numpy as np
+import imgstore
 
 from trajectorytools import Trajectories
 from ethoscope.utils.io import SQLiteResultWriter 
