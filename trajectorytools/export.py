@@ -5,6 +5,7 @@ import json
 import yaml
 import sqlite3
 import tqdm
+import numpy as np
 
 from trajectorytools import Trajectories
 from ethoscope.utils.io import SQLiteResultWriter 
