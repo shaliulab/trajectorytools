@@ -46,13 +46,18 @@ class TrackingUnit:
 
 class EthoscopeExport(SQLiteResultWriter):
 
-    def __init__(self, trajectories, store, *args, **kwargs):
+    def __init__(self, trajectories, store, *args, frame_range=None, **kwargs):
 
         self._trajectories = trajectories
         self._store = store
         config = EthoscopeExport.get_config(trajectories)
         rois = EthoscopeExport.get_rois(config)        
         self._unit_trackers = [TrackingUnit(trajectories, r) for r in rois]
+        
+        if frame_range is None:
+            frame_range = (0, self._trajectories.s.shape[0]+1)
+        
+        self._frame_range = frame_range
         super().__init__(*args, **kwargs)
 
 
@@ -141,7 +146,9 @@ class EthoscopeExport(SQLiteResultWriter):
 
     def start(self):
 
-        for i in tqdm.tqdm(range(self._trajectories.s.shape[0])):
+        frame_range = self._frame_range
+
+        for i in tqdm.tqdm(range(*frame_range)):
 
             img, (frame_number, frame_timestamp) = self._store.get_image(i)
             t_ms = frame_timestamp
