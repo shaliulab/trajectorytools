@@ -24,11 +24,11 @@ from ethoscope.trackers.trackers import BaseTracker
 
 class ReadingTracker(BaseTracker):
 
-    def __init__(self, trajectories, store, *args, **kwargs):
+    def __init__(self, roi, trajectories, store, *args, **kwargs):
         self._trajectories = trajectories
         self._store = store
         self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
-        super(self, ReadingTracker).__init__(self, *args, **kwargs)
+        super(self, ReadingTracker).__init__(self, roi, *args, **kwargs)
 
 
     def _find_position(self, img, mask, t):
