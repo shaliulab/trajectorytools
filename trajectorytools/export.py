@@ -157,7 +157,7 @@ class ExportMonitor:
             trajectories,
             thread_safe_store,
             output=output,
-            path=path
+            path=output
         )
 
         try:
