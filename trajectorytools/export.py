@@ -20,6 +20,7 @@ class TrackingUnit:
         self._trajectory = trajectories[:, roi._idx-1, :]
         self._roi = roi
 
+
     def track(self, frame_idx, absolute=True):
         individual_idx
         x_pos, y_pos = self._trajectory._s[frame_idx, :]
@@ -76,7 +77,7 @@ class EthoscopeExport(SQLiteResultWriter):
         }
 
         result_writer = cls(
-            trajectories
+            trajectories,
             output, rois,
             metadata=metadata,
             take_frame_shots=False, sensor=None,
@@ -86,9 +87,9 @@ class EthoscopeExport(SQLiteResultWriter):
 
         return result_writer
 
+
     def release(self):
         self._queue.put("DONE")
-
 
 
     def get_config(cls, tr: trajectorytools.Trajectories):
