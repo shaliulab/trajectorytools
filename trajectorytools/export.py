@@ -100,11 +100,11 @@ def get_rois(config):
     return rois
 
 
-    def get_output_filename(output, chunk):
-        if chunk is None:
-            return output
-        else:
-            return output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
+def get_output_filename(output, chunk):
+    if chunk is None:
+        return output
+    else:
+        return output.strip(".db") + f"_{str(chunk).zfill(6)}.db"
 
 
 class ExportMonitor:
