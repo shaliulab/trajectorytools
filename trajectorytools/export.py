@@ -128,7 +128,7 @@ class EthoscopeExport(SQLiteResultWriter):
 
     def start(self):
 
-        for i in tqdm(range(self._trajectories.s.shape[0])):
+        for i in tqdm.tqdm(range(self._trajectories.s.shape[0])):
 
             t = i / self._trajectories.params["frame_rate"]
             t_ms = t * 1000
