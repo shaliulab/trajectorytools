@@ -92,7 +92,7 @@ class EthoscopeExport(SQLiteResultWriter):
         self._queue.put("DONE")
 
 
-    def get_config(cls, tr: trajectorytools.Trajectories):
+    def get_config(cls, tr: Trajectories):
         """
         Read the idtrackerai config of the experiment whose trajectories are being analyzed
         """
