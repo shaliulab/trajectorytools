@@ -140,7 +140,7 @@ class ExportMonitor:
 
         if chunks[0] != 0:
             n_frames = store._index.get_chunk_metadata(chunks[0]-1)["frame_number"][-1]
-            missing_data = np.array([[[[0, ] * trajectories.shape[2], ] * trajectories.shape[1], ] * n_frames])[0,:,:,:]
+            missing_data = np.array([[[[0, ] * trajectories.s.shape[2], ] * trajectories.s.shape[1], ] * n_frames])[0,:,:,:]
             trajectories_w_missing_data = tt.Trajectories.from_positions(missing_data)
             trajectories_w_missing_data.extend(tr)
         else:
