@@ -56,7 +56,7 @@ class ReadingTracker(BaseTracker):
 
     def _track(self, img, mask, t):
 
-        frame_idx = self._frame_time_table.loc[self._frame_time_table["frame_time"] == t]["frame_number"].values[0]
+        frame_idx = self.get_frame_idx(t)
         x, y = self._trajectory._s[frame_idx, :]
 
         # _, _, w_im, _ = self._roi.rectangle
@@ -78,6 +78,12 @@ class ReadingTracker(BaseTracker):
         out = DataPoint([x_var, y_var, distance])
 
         return [out]
+
+
+    def get_frame_idx(self, t):
+        return self._frame_time_table.loc[self._frame_time_table["frame_time"] == t]["frame_number"].values[0]
+
+
 
 class TrackingUnit(EthoscopeTrackingUnit):
 
@@ -130,11 +136,21 @@ class ExportMonitor:
         self._output = output
         self._chunks = chunks
         self._frame_time_table = pd.DataFrame(store.get_frame_metadata())
+
+
+        if chunks[0] != 0:
+            n_frames = store._index.get_chunk_metadata(chunks[0]-1)["frame_number"][-1]
+            missing_data = np.array([[[[0, ] * trajectories.shape[2], ] * trajectories.shape[1], ] * n_frames])[0,:,:,:]
+            trajectories_w_missing_data = tt.Trajectories.from_positions(missing_data)
+            trajectories_w_missing_data.extend(tr)
+        else:
+            trajectories_w_missing_data = trajectories
+
         
         config = get_config(trajectories)
         rois = get_rois(config)
 
-        self._unit_trackers = [TrackingUnit(trajectories=trajectories, frame_time_table=self._frame_time_table, roi=r) for r in rois]
+        self._unit_trackers = [TrackingUnit(trajectories=trajectories_w_missing_data, frame_time_table=self._frame_time_table, roi=r) for r in rois]
 
 
     def get_chunk_frame_range(self, chunk):
