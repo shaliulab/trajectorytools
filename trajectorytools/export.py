@@ -66,6 +66,11 @@ class EthoscopeExport(SQLiteResultWriter):
         machine_name = "FLYHOSTEL_1"
         machine_id = get_machine_id()
         version = get_commit_hash()
+        db_credentials = {
+            "name": output,
+            "user": "ethoscope",
+            "password": "ethoscope"
+        }
 
         metadata = {
             "machine_id": machine_id,
@@ -80,7 +85,7 @@ class EthoscopeExport(SQLiteResultWriter):
 
         result_writer = cls(
             trajectories,
-            output, rois,
+            db_credentials, rois,
             metadata=metadata,
             take_frame_shots=False, sensor=None,
             make_dam_like_table=False,
