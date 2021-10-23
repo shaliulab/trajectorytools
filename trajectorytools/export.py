@@ -71,11 +71,11 @@ class EthoscopeExport(SQLiteResultWriter):
             "machine_id": machine_id,
             "machine_name": machine_name,
             "date_time": start_time,  # the camera start time is the reference 0
-            "frame_width": store_metadata['imgshape'][1],
-            "frame_height": store_metadata['imgshape'][0],
+            "frame_width": store_metadata["__store"]['imgshape'][1],
+            "frame_height": store_metadata["__store"]['imgshape'][0],
             "version": version,
             "experimental_info": "",
-            "selected_options": store_metadata,
+            "selected_options": store_metadata["__store"],
         }
 
         result_writer = cls(
