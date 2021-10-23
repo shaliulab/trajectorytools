@@ -128,6 +128,7 @@ class ExportMonitor:
     def start(self, ncores=1):
 
         store_filename = os.path.join(self._store.filename, "metadata.yaml")
+        chunks = self._store.chunks
 
         if ncores == 1:
             frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
@@ -136,12 +137,12 @@ class ExportMonitor:
                 store_filename=store_filename, chunk=None
             )]
         else:
-            frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in self._store.chunks]
+            frame_ranges = [self.get_chunk_frame_range(chunk) for chunk in chunks]
             output = Parallel(n_jobs=ncores, verbose=10)(
                 delayed(self.start_single_thread)(
                     frame_range=frame_ranges[i],
                     store_filename=store_filename, chunk=i
-                ) for i in self._store.chunks
+                ) for i in chunks
             )
         
 
