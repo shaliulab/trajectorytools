@@ -149,9 +149,8 @@ class ExportMonitor:
     def start_single_thread(self, frame_range, store_filename, chunk=None):
 
         trajectories = self._trajectories[frame_range[0]:frame_range[1], :, :]
-        
         output=self.get_output_filename(self._output, chunk)
-
+        return 1
         thread_safe_store = imgstore.new_for_filename(store_filename)
         
         result_writer = EthoscopeExport.from_trajectories(
