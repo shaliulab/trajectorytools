@@ -1,6 +1,7 @@
 import os.path
 import tempfile
 import json
+import datetime
 
 import yaml
 import sqlite3
@@ -99,8 +100,8 @@ class EthoscopeExport(SQLiteResultWriter):
         Read the idtrackerai config of the experiment whose trajectories are being analyzed
         """
         experiment_folder = os.path.join("/", *tr.params["path"].strip("/").split("/")[::-1][3:][::-1])
-        datetime = os.path.basename(experiment_folder)
-        config_file = os.path.join(experiment_folder, datetime + ".conf")
+        date_time = os.path.basename(experiment_folder)
+        config_file = os.path.join(experiment_folder, date_time + ".conf")
 
         with open(config_file, "r") as fh:
             config = json.load(fh)
