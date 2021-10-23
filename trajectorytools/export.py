@@ -32,7 +32,7 @@ class ProgressParallel(Parallel):
 
     def __call__(self, *args, **kwargs):
         with tqdm() as self._pbar:
-            return joblib.Parallel.__call__(self, *args, **kwargs)
+            return Parallel.__call__(self, *args, **kwargs)
 
     def print_progress(self, *args, **kwargs):
         self._pbar.total = self.n_dispatched_tasks
