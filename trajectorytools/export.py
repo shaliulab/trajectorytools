@@ -15,34 +15,56 @@ from ethoscope.core.roi import ROI
 from ethoscope.web_utils.helpers import get_machine_id
 from ethoscope.core.variables import XPosVariable, YPosVariable
 from ethoscope.core.data_point import DataPoint
-# from ethoscope.core.tracking_unit import tracking_unit
-
-class TrackingUnit:
-
-    def __init__(self, trajectories, roi):
-        self._trajectory = trajectories[:, roi._idx-1, :]
-        self._roi = roi
-
-    @property
-    def roi(self):
-        return self._roi
+from ethoscope.core.tracking_unit import TrackingUnit as EthoscopeTrackingUnit
+from ethoscope.trackers.trackers import BaseTracker
+# from ethoscope.stimulators.stimulators import DefaultStimulator
+# from ethoscope.hardware.interfaces.interfaces import HardwareConnection
 
 
-    def track(self, frame_idx, absolute=True):
 
+class ReadingTracker(BaseTracker):
+
+    def __init__(self, trajectories, store, *args, **kwargs):
+        self._trajectories = trajectories
+        self._store = store
+        self._store_frame_time = pd.DataFrame(store.get_frame_metadata())
+        super(self, ReadingTracker).__init__(self, *args, **kwargs)
+
+
+    def _find_position(self, img, mask, t):
+        return self._track(img=img, mask=mask, t=t)
+
+    def _track(self, img, mask, t):
+
+       frame_idx = self._store_frame_time.loc[self._store_frame_time["frame_time"] == t]["frame_number"].values[0]
         x_pos, y_pos = self._trajectory._s[frame_idx, :]
 
-        if absolute:
-            x,y,w,h = self._roi._rectangle
-            x_pos -= x
-            y_pos -= y
+        pos = x +1.0j * y
+        if self._old_pos is None:
+            xy_dist = 1        
+        else:
+            xy_dist = round(log10(1. / float(w_im) + abs(pos - self._old_pos)) * 1000) 
+
+        self.old_pos = pos
 
         x_var = XPosVariable(int(round(x_pos)))
         y_var = YPosVariable(int(round(y_pos)))
-        out = DataPoint([x_var, y_var])
+        distance = XYDistance(int(xy_dist))
+
+        out = DataPoint([x_var, y_var, distance])
 
         return [out]
 
+class TrackingUnit(EthoscopeTrackingUnit):
+
+    def __init__(self, trajectories, store, roi):
+        self._trajectory = trajectories[:, roi._idx-1, :]
+        super(self, EthoscopeTrackingUnit).__init__(
+            self, *args,
+            tracking_class=ReadingTracker, roi=roi, trajectories=trajectories, store=store, stimulator=None,
+            **kwargs
+        )
+        
 
 class EthoscopeExport(SQLiteResultWriter):
 
@@ -51,8 +73,8 @@ class EthoscopeExport(SQLiteResultWriter):
         self._trajectories = trajectories
         self._store = store
         config = EthoscopeExport.get_config(trajectories)
-        rois = EthoscopeExport.get_rois(config)        
-        self._unit_trackers = [TrackingUnit(trajectories, r) for r in rois]
+        rois = EthoscopeExport.get_rois(config)
+        self._unit_trackers = [TrackingUnit(trajectories, store, r) for r in rois]
         
         if frame_range is None:
             frame_range = (0, self._trajectories.s.shape[0]+1)
@@ -154,7 +176,7 @@ class EthoscopeExport(SQLiteResultWriter):
             t_ms = frame_timestamp
 
             for j, track_u in enumerate(self._unit_trackers):
-                data_rows = track_u.track(i) 
+                data_rows = track_u.track(t_ms, img) 
                 self.write(t_ms, track_u.roi, data_rows)
 
             self.flush(t=t_ms, frame=img, frame_idx=i)
