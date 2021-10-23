@@ -45,13 +45,18 @@ class TrackingUnit:
 
 class EthoscopeExport(SQLiteResultWriter):
 
-    def __init__(self, trajectories, *args, **kwargs):
+    def __init__(self, trajectories, store, *args, **kwargs):
 
         self._trajectories = trajectories
+        self._store = store
         config = EthoscopeExport.get_config(trajectories)
         rois = EthoscopeExport.get_rois(config)        
         self._unit_trackers = [TrackingUnit(trajectories, r) for r in rois]
         super().__init__(*args, **kwargs)
+
+
+    def get_image(self, idx):
+        return self._store.get_image(idx)
 
 
     @classmethod
@@ -61,8 +66,12 @@ class EthoscopeExport(SQLiteResultWriter):
         config = cls.get_config(trajectories)
         rois = cls.get_rois(config)
 
-        with open(os.path.join(experiment_folder, "metadata.yaml"), 'r') as f:
+        store_file = os.path.join(experiment_folder, "metadata.yaml")
+
+        with open(store_file, 'r') as f:
             store_metadata = yaml.load(f, Loader=yaml.SafeLoader)
+
+        store = imgstore.new_from_filename(store_file)
 
         start_time = store_metadata["__store"]['created_utc']
         start_time = datetime.datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%f").timestamp()
@@ -88,7 +97,7 @@ class EthoscopeExport(SQLiteResultWriter):
         }
 
         result_writer = cls(
-            trajectories,
+            trajectories, store,
             db_credentials, rois,
             metadata=metadata,
             take_frame_shots=False, sensor=None,
@@ -129,17 +138,24 @@ class EthoscopeExport(SQLiteResultWriter):
         rois = [ROI(ct, i+1) for i in range(n_individuals)]
         return rois
 
+    def flush(self, t, frame, frame_idx, result_writer):
+
+        result_writer.flush(t, frame, frame_idx=frame_idx)
+        return 0
+
 
     def start(self):
 
         for i in tqdm.tqdm(range(self._trajectories.s.shape[0])):
 
-            t = i / self._trajectories.params["frame_rate"]
-            t_ms = t * 1000
+            img, (frame_number, frame_timestamp) = self._store.get_image(i)
+            t_ms = frame_timestamp
 
             for j, track_u in enumerate(self._unit_trackers):
                 data_rows = track_u.track(i) 
                 self.write(t_ms, track_u.roi, data_rows)
+
+            self.flush(t=t_ms, frame=img, frame_idx=i, result_writer=result_writer)
 
 
 def get_commit_hash():
