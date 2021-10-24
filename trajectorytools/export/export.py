@@ -14,9 +14,9 @@ import pandas as pd
 from trajectorytools import Trajectories
 
 
-from sleep_models.export.monitor import ExportMonitor
-from sleep_models.export.io import EthoscopeExport
-from sleep_models.export.parallel import ProgressParallel, delayed
+from trajectorytools.export.monitor import ExportMonitor
+from trajectorytools.export.io import EthoscopeExport
+from trajectorytools.export.parallel import ProgressParallel, delayed
 
 
 def get_parser():

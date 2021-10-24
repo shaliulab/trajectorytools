@@ -2,9 +2,9 @@ import os.path
 import datetime
 import yaml
 
-from ethoscope.utils.io import SQLiteResultWriter 
+from ethoscope.utils.io import SQLiteResultWriter
 from ethoscope.web_utils.helpers import get_machine_id
-from sleep_models.export.helpers import get_commit_hash
+from trajectorytools.export.helpers import get_commit_hash
 
 class EthoscopeExport(SQLiteResultWriter):
 

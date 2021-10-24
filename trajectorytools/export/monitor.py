@@ -9,10 +9,10 @@ import tqdm
 
 from trajectorytools import Trajectories
 
-from sleep_models.export.io import EthoscopeExport as ResultWriterClass
-from sleep_models.export.parallel import ProgressParallel, delayed
-from sleep_models.export.helpers import get_config, get_rois, get_output_filename, get_commit_hash
-from sleep_models.export.tracking_unit import TrackingUnit
+from trajectorytools.export.io import EthoscopeExport as ResultWriterClass
+from trajectorytools.export.parallel import ProgressParallel, delayed
+from trajectorytools.export.helpers import get_config, get_rois, get_output_filename, get_commit_hash
+from trajectorytools.export.tracking_unit import TrackingUnit
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class ExportMonitor(threading.Thread):
     """
 
     def __init__(self, trajectories, store, output, chunks, *args, frame_range=None, **kwargs):
-        
+
         self._store = store
         self._output = output
         self._chunks = chunks
@@ -68,6 +68,7 @@ class ExportMonitor(threading.Thread):
         store_filename = os.path.join(self._store.filename, "metadata.yaml")
         chunks = self._chunks
 
+        import ipdb; ipdb.set_trace()
         if ncores == 1:
             if self._frame_range is None:
                 frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
@@ -105,7 +106,7 @@ class ExportMonitor(threading.Thread):
         trajectories = trajectories[frame_range[0]:frame_range[1], :, :]
         output=get_output_filename(output, chunk)
         thread_safe_store = imgstore.new_for_filename(store_filename)
-        
+
         rw = ResultWriterClass.from_trajectories(
             trajectories,
             thread_safe_store,
@@ -136,9 +137,9 @@ class ExportMonitor(threading.Thread):
                         result_writer.write(t_ms, track_u.roi, data_rows)
 
                     result_writer.flush(t=t_ms, frame=None, frame_idx=frame_number)
-                
+
                 return 0
-            
+
             except Exception as error:
                 logger.error(error)
                 logger.error(traceback.print_exc())
