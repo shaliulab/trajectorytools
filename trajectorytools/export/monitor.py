@@ -28,6 +28,7 @@ class ExportMonitor(threading.Thread):
         self._output = output
         self._chunks = chunks
         self._frame_time_table = pd.DataFrame(store.get_frame_metadata())
+        self._frame_range = frame_range
 
 
         if chunks[0] != 0:
@@ -69,7 +70,11 @@ class ExportMonitor(threading.Thread):
         chunks = self._chunks
 
         if ncores == 1:
-            frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
+            if self._frame_range is None:
+                frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
+            else:
+                frame_range = self._frame_range
+
             output = [self.start_single_thread(
                 trajectories=self._trajectories,
                 unit_trackers=self._unit_trackers,
@@ -79,6 +84,7 @@ class ExportMonitor(threading.Thread):
                 store_filename=store_filename, chunk=None,
                 ncores=ncores
             )]
+
         else:
             frame_ranges = ([None,] * chunks[0]) + [self.get_chunk_frame_range(chunk) for chunk in chunks]
             output = ProgressParallel(n_jobs=ncores, verbose=10)(
