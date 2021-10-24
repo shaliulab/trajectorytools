@@ -3,7 +3,7 @@ import json
 
 from ethoscope.core.roi import ROI
 
-from trajectorytools.trajectorytools import Trajectories
+from trajectorytools.trajectories import Trajectories
 
 def get_config(tr: Trajectories):
     """
