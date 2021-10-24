@@ -42,7 +42,6 @@ class ExportMonitor(threading.Thread):
 
 
         self._trajectories = trajectories_w_missing_data
-        import ipdb; ipdb.set_trace()
         config = get_config(self.trajectories)
         rois = get_rois(config)
 
@@ -75,7 +74,7 @@ class ExportMonitor(threading.Thread):
             else:
                 frame_range = self._frame_range
 
-            output = [self.start_single_thread(
+            output = [self.run_single_thread(
                 trajectories=self._trajectories,
                 unit_trackers=self._unit_trackers,
                 output=self._output,
@@ -88,7 +87,7 @@ class ExportMonitor(threading.Thread):
         else:
             frame_ranges = ([None,] * chunks[0]) + [self.get_chunk_frame_range(chunk) for chunk in chunks]
             output = ProgressParallel(n_jobs=ncores, verbose=10)(
-                delayed(self.start_single_thread)(
+                delayed(self.run_single_thread)(
                     trajectories=self._trajectories,
                     unit_trackers=self._unit_trackers,
                     output=self._output,
