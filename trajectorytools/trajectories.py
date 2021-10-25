@@ -497,13 +497,13 @@ class Trajectories(Trajectory):
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration_backwards(t_smooth, *args. **kwargs)
+            ] = tt.velocity_acceleration_backwards(t_smooth, *args, **kwargs)
         else:
             [
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration(t_smooth, *args. **kwargs)
+            ] = tt.velocity_acceleration(t_smooth, *args, **kwargs)
 
         # TODO: Organise the params dictionary more hierarchically
         # Maybe in the future add a "how_construct" key being a dictionary
