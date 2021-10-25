@@ -184,15 +184,45 @@ def smooth_acceleration(t, **kwargs):
     return smooth(t, **kwargs)
 
 
-def velocity_acceleration_backwards(t, k_v_history=0.0):
+def velocity_acceleration_backwards(t, k_v_history=0.0, pad=None):
     v = (1 - k_v_history) * (t[2:] - t[1:-1]) + k_v_history * (
         t[2:] - t[:-2]
     ) / 2
     a = t[2:] - 2 * t[1:-1] + t[:-2]
-    return t[2:], v, a
 
+    trajectories = [t[2:], v, a]
 
-def velocity_acceleration(t):
+    if pad is None:
+        pass
+    elif pad=="constant":
+        n_inds = t.shape[1]
+        n_dims = t.shape[2]
+        for i in range(len(trajectories)):
+            d = trajectories[i]
+            trajectories[i] = np.concatenate([
+                d[:2].reshape((1,n_inds,n_dims)),
+                d
+            ])
+
+    return trajectories
+
+def velocity_acceleration(t, pad=None):
     v = (t[2:] - t[:-2]) / 2
     a = t[2:] - 2 * t[1:-1] + t[:-2]
-    return t[1:-1], v, a
+
+    trajectories = [t[1:-1], v, a]
+
+    if pad is None:
+        pass
+    elif pad=="constant":
+        n_inds = t.shape[1]
+        n_dims = t.shape[2]
+        for i in range(len(trajectories)):
+            d = trajectories[i]
+            trajectories[i] = np.concatenate([
+                d[0].reshape((1,n_inds,n_dims)),
+                d,
+                d[-1].reshape((1,n_inds,n_dims))
+            ])
+
+    return trajectories
