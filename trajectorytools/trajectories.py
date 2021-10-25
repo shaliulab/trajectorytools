@@ -345,7 +345,7 @@ class Trajectories(Trajectory):
 
             correct_id=dist.argmin(axis=1)
         else:
-            correct_id=np.arange(correct_id = other._s.shape[1])
+            correct_id=np.arange(other._s.shape[1])
 
 
         for key in self.keys_to_copy:
