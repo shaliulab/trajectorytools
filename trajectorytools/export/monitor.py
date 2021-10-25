@@ -38,6 +38,7 @@ class ExportMonitor(threading.Thread):
             missing_data = np.array([[[[0, ] * trajectories.s.shape[2], ] * trajectories.s.shape[1], ] * n_frames])[0,:,:,:]
             trajectories_w_missing_data = Trajectories.from_positions(missing_data)
             trajectories_w_missing_data.extend(trajectories)
+            trajectories_w_missing_data.params = trajectories.params
         else:
             trajectories_w_missing_data = trajectories
 
@@ -91,7 +92,14 @@ class ExportMonitor(threading.Thread):
             if self._frame_range is None:
                 pass
             else:
-                frame_ranges = [(e[0] + self._frame_range[0], e[0] + self._frame_range[1]) for e in frame_ranges]
+                frame_ranges_ = [e for e in frame_ranges]
+                for i in range(len(frame_ranges)):
+                    if frame_ranges_[i] is None:
+                        pass
+                    else:
+                        frame_ranges_[i] = (frame_ranges[i][0] + self._frame_range[0], frame_ranges[i][0] + self._frame_range[1])
+
+                    frame_ranges = frame_ranges_
 
             output = ProgressParallel(n_jobs=ncores, verbose=10)(
                 delayed(self.run_single_thread)(
