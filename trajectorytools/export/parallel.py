@@ -1,5 +1,5 @@
 from joblib import Parallel, delayed
-from tqdm.auto import tqdm as tqdm_auto
+from tqdm.auto import tqdm
 
 
 class ProgressParallel(Parallel):

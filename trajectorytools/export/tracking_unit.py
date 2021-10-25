@@ -1,4 +1,9 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from ethoscope.core.tracking_unit import TrackingUnit as EthoscopeTrackingUnit
+from trajectorytools.export.tracker import ReadingTracker
 
 class TrackingUnit(EthoscopeTrackingUnit):
 
@@ -10,4 +15,4 @@ class TrackingUnit(EthoscopeTrackingUnit):
             tracking_class=ReadingTracker, roi=roi, trajectory=trajectory, frame_time_table=frame_time_table, stimulator=None,
             **kwargs
         )
-        
+

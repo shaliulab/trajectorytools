@@ -4,7 +4,7 @@ import yaml
 
 from ethoscope.utils.io import SQLiteResultWriter
 from ethoscope.web_utils.helpers import get_machine_id
-from trajectorytools.export.helpers import get_commit_hash
+from trajectorytools.export.helpers import get_commit_hash, get_rois, get_config
 
 class EthoscopeExport(SQLiteResultWriter):
 

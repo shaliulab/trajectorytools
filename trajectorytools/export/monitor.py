@@ -1,6 +1,7 @@
 import os.path
 import logging
 import threading
+import traceback
 
 import numpy as np
 import imgstore
@@ -47,7 +48,7 @@ class ExportMonitor(threading.Thread):
 
         self._unit_trackers = [TrackingUnit(trajectories=trajectories_w_missing_data, frame_time_table=self._frame_time_table, roi=r) for r in rois]
 
-        super(ExportMonitor, self).__init__()
+        super(ExportMonitor, self).__init__(*args, **kwargs)
 
     @property
     def trajectories(self):
@@ -68,7 +69,6 @@ class ExportMonitor(threading.Thread):
         store_filename = os.path.join(self._store.filename, "metadata.yaml")
         chunks = self._chunks
 
-        import ipdb; ipdb.set_trace()
         if ncores == 1:
             if self._frame_range is None:
                 frame_range = self._frame_time_table["frame_number"].iloc[[0,-1]].values.tolist()
@@ -86,7 +86,13 @@ class ExportMonitor(threading.Thread):
             )]
 
         else:
+
             frame_ranges = ([None,] * chunks[0]) + [self.get_chunk_frame_range(chunk) for chunk in chunks]
+            if self._frame_range is None:
+                pass
+            else:
+                frame_ranges = [(e[0] + self._frame_range[0], e[0] + self._frame_range[1]) for e in frame_ranges]
+
             output = ProgressParallel(n_jobs=ncores, verbose=10)(
                 delayed(self.run_single_thread)(
                     trajectories=self._trajectories,

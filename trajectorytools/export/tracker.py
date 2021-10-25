@@ -96,5 +96,5 @@ class ReadingTracker(BaseTracker):
 
 
     def get_frame_idx(self, t):
-        return self._frame_time_table.loc[self._frame_time_table["frame_time"] == t]["frame_number"].values[0]
+        return self._frame_time_table.loc[self._frame_time_table["frame_time"] == t]["frame_number"].values[0] - 1
 
