@@ -2,7 +2,6 @@ import os.path
 import json
 
 import numpy as np
-
 from ethoscope.core.roi import ROI
 from trajectorytools.trajectories import Trajectories
 

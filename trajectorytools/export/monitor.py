@@ -37,7 +37,7 @@ class ExportMonitor(threading.Thread):
             self._first_frame = store._index.get_chunk_metadata(chunks[0])["frame_number"][0]
             missing_data = np.array([[[[-1, ] * trajectories.s.shape[2], ] * trajectories.s.shape[1], ] * n_frames])[0,:,:,:]
             trajectories_w_missing_data = Trajectories.from_positions(missing_data)
-            trajectories_w_missing_data.extend(trajectories, debug=True)
+            trajectories_w_missing_data.extend(trajectories, init=True)
             trajectories_w_missing_data.params = trajectories.params
         else:
             trajectories_w_missing_data = trajectories

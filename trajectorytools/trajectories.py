@@ -314,7 +314,7 @@ class Trajectories(Trajectory):
 
 
 
-    def extend(self, other, debug=False):
+    def extend(self, other, init=False, debug=False):
         """
         Extend a trajectory using the data from the consecutive trajectory
 
@@ -324,22 +324,29 @@ class Trajectories(Trajectory):
 
         This may have to be proofread in extreme cases
         where the animals move too fast or the framerate is too low
+
+        If init=True, no id matching with the previous data is performed
         """
-        last_seen = self._s[-1,:,:]
-        next_seen = other._s[0,:, :]
+
+        if not init:
+            last_seen = self._s[-1,:,:]
+            next_seen = other._s[0,:, :]
 
 
-        if debug:
-            import ipdb; ipdb.set_trace()
+            if debug:
+                import ipdb; ipdb.set_trace()
 
 
-        dist=np.sqrt(
-            np.diff(self.cartesian([last_seen[:,0], next_seen[:,0]]), axis=1)**2 +
-            np.diff(self.cartesian([last_seen[:,1], next_seen[:,1]]), axis=1)**2
-        )
-        dist=dist.reshape((last_seen.shape[0], next_seen.shape[0]))
+            dist=np.sqrt(
+                np.diff(self.cartesian([last_seen[:,0], next_seen[:,0]]), axis=1)**2 +
+                np.diff(self.cartesian([last_seen[:,1], next_seen[:,1]]), axis=1)**2
+            )
+            dist=dist.reshape((last_seen.shape[0], next_seen.shape[0]))
 
-        correct_id=dist.argmin(axis=1)
+            correct_id=dist.argmin(axis=1)
+        else:
+            correct_id=np.arange(correct_id = other._s.shape[1])
+
 
         for key in self.keys_to_copy:
             logger.info(f"Extending {key} key")
