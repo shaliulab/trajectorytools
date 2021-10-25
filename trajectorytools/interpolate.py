@@ -199,10 +199,13 @@ def velocity_acceleration_backwards(t, k_v_history=0.0, pad=None):
         n_dims = t.shape[2]
         for i in range(len(trajectories)):
             d = trajectories[i]
-            trajectories[i] = np.concatenate([
-                d[:2].reshape((1,n_inds,n_dims)),
-                d
-            ])
+            if i == 0:
+                trajectories[i] = t
+            else:
+                trajectories[i] = np.concatenate([
+                    d[:2].reshape((1,n_inds,n_dims)),
+                    d
+                ])
 
     return trajectories
 
@@ -218,11 +221,14 @@ def velocity_acceleration(t, pad=None):
         n_inds = t.shape[1]
         n_dims = t.shape[2]
         for i in range(len(trajectories)):
-            d = trajectories[i]
-            trajectories[i] = np.concatenate([
-                d[0].reshape((1,n_inds,n_dims)),
-                d,
-                d[-1].reshape((1,n_inds,n_dims))
-            ])
+            if i == 0:
+                trajectories[i] = t
+            else:
+                d = trajectories[i]
+                trajectories[i] = np.concatenate([
+                    d[0].reshape((1,n_inds,n_dims)),
+                    d,
+                    d[-1].reshape((1,n_inds,n_dims))
+                ])
 
     return trajectories
