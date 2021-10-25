@@ -314,7 +314,7 @@ class Trajectories(Trajectory):
 
 
 
-    def extend(self, other):
+    def extend(self, other, debug=False):
         """
         Extend a trajectory using the data from the consecutive trajectory
 
@@ -327,6 +327,10 @@ class Trajectories(Trajectory):
         """
         last_seen = self._s[-1,:,:]
         next_seen = other._s[0,:, :]
+
+
+        if debug:
+            import ipdb; ipdb.set_trace()
 
 
         dist=np.sqrt(
