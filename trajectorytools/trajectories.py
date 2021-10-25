@@ -417,7 +417,7 @@ class Trajectories(Trajectory):
         return cls.from_idtrackerai(trajectories_path, **kwargs)
 
     @classmethod
-    def from_idtrackerai(cls, trajectories_path, **kwargs):
+    def from_idtrackerai(cls, trajectories_path, *args, **kwargs):
         """Create Trajectories from a idtracker.ai trajectories file
 
         :param trajectories_path: idtracker.ai generated file
@@ -425,7 +425,7 @@ class Trajectories(Trajectory):
         traj_dict = np.load(
             trajectories_path, encoding="latin1", allow_pickle=True
         ).item()
-        tr = cls.from_idtracker_(traj_dict, **kwargs)
+        tr = cls.from_idtracker_(traj_dict, *args, **kwargs)
         tr.params["path"] = trajectories_path
         tr.params["construct_method"] = "from_idtrackerai"
         return tr
@@ -434,10 +434,12 @@ class Trajectories(Trajectory):
     def from_idtracker_(
         cls,
         traj_dict,
+        *args,
         interpolate_nans=True,
         center=False,
         smooth_params=None,
         dtype=np.float64,
+        **kwargs
     ):
         """Create Trajectories from a idtracker.ai trajectories dictionary
 
@@ -451,7 +453,7 @@ class Trajectories(Trajectory):
 
         t = traj_dict["trajectories"].astype(dtype)
         traj = cls.from_positions(
-            t, interpolate_nans=interpolate_nans, smooth_params=smooth_params
+            t, *args, interpolate_nans=interpolate_nans, smooth_params=smooth_params, **kwargs
         )
 
         radius, center_ = radius_and_center_from_traj_dict(traj._s, traj_dict)
@@ -467,7 +469,7 @@ class Trajectories(Trajectory):
         return traj
 
     @classmethod
-    def from_positions(cls, t, interpolate_nans=True, smooth_params=None):
+    def from_positions(cls, t, *args, interpolate_nans=True, smooth_params=None,**kwargs):
         """Trajectory from positions
 
         :param t: Positions nd.array.
@@ -495,13 +497,13 @@ class Trajectories(Trajectory):
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration_backwards(t_smooth)
+            ] = tt.velocity_acceleration_backwards(t_smooth, *args. **kwargs)
         else:
             [
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration(t_smooth)
+            ] = tt.velocity_acceleration(t_smooth, *args. **kwargs)
 
         # TODO: Organise the params dictionary more hierarchically
         # Maybe in the future add a "how_construct" key being a dictionary
