@@ -28,7 +28,6 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
         assert not np.isnan(xb).any()
     except AssertionError as error:
         raise ValueError("The identity matching in the contiguous frames is ambiguous")
-    
 
     # We calculate the matrix of all distances between
     # all points in a and all points in b, and then find
@@ -52,6 +51,7 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
 
 def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 
+    import ipdb; ipdb.set_trace()
     if len(t_list) == 1:
         return t_list[0]
     return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
