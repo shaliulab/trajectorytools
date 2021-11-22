@@ -54,7 +54,8 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
     import ipdb; ipdb.set_trace()
     if len(t_list) == 1:
         return t_list[0]
-    return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
+    # return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
+    return _concatenate_two_np(_concatenate_np(t_list[:-1]), t_list[-1])
 
 
 # Obtain trajectories from concatenation
