@@ -207,7 +207,7 @@ def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
 
 
 def from_several_idtracker_files(
-    trajectories_paths, zero_index=0, **kwargs
+    trajectories_paths, zero_index=0, strict=True, **kwargs
 ):
 
     traj_dicts = []
@@ -218,7 +218,11 @@ def from_several_idtracker_files(
         ).item()
         traj_dicts.append(traj_dict)
 
-    status, traj_dict = _concatenate_idtrackerai_dicts(traj_dicts, zero_index=zero_index)
+    status, traj_dict = _concatenate_idtrackerai_dicts(
+        traj_dicts,
+        zero_index=zero_index, strict=strict
+    )
+    
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
