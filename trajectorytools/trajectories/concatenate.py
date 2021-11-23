@@ -69,7 +69,6 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
         raise error
 
 
-
 # Obtain trajectories from concatenation
 
 
@@ -96,7 +95,7 @@ def _concatenate_idtrackerai_dicts(traj_dicts):
     return traj_dict_cat
 
 
-def _pick_trajectory_file(trajectories_folder):
+def _pick_trajectory_file(trajectories_folder, pref_index=-1):
     """
     Return the path to the last trajectory file in this folder
     based on the timestamp suffix added when
@@ -106,26 +105,31 @@ def _pick_trajectory_file(trajectories_folder):
     is run.
 
     The original file without the timestamp, produced by idtrackerai alone,
-    will be selected last
+    will be selected last by default
     """
     trajectory_files = sorted(
         [f for f in os.listdir(trajectories_folder)],
         key=lambda x: os.path.splitext(x)[0],
     )
-    return os.path.join(trajectories_folder, trajectory_files[-1])
+    return os.path.join(trajectories_folder, trajectory_files[pref_index])
 
 
-def pick_w_wo_gaps(session_folder):
+def pick_w_wo_gaps(session_folder, allow_human=True):
     """Select the best trajectories file
     available in an idtrackerai session
     """
     trajectories_wo_gaps = os.path.join(session_folder, "trajectories_wo_gaps")
     trajectories = os.path.join(session_folder, "trajectories")
 
+    if allow_human:
+        pref_index=-1
+    else:
+        pref_index=0
+
     if os.path.exists(trajectories_wo_gaps):
-        return _pick_trajectory_file(trajectories_wo_gaps)
+        return _pick_trajectory_file(trajectories_wo_gaps, pref_index)
     elif os.path.exists(trajectories):
-        return _pick_trajectory_file(trajectories)
+        return _pick_trajectory_file(trajectories, pref_index)
     else:
         raise Exception(f"Session {session_folder} has no trajectories")
 
@@ -135,7 +139,7 @@ def is_idtrackerai_session(path):
     return os.path.exists(os.path.join(path, "video_object.npy"))
 
 
-def get_trajectories(idtrackerai_collection_folder):
+def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
     """Return a list of all trajectory files available in an idtrackerai collection folder"""
     file_contents = os.listdir(idtrackerai_collection_folder)
 
@@ -150,7 +154,7 @@ def get_trajectories(idtrackerai_collection_folder):
             idtrackerai_sessions.append(folder)
 
     trajectories_paths = {
-        os.path.basename(session): pick_w_wo_gaps(session)
+        os.path.basename(session): pick_w_wo_gaps(session, *args, **kwargs)
         for session in idtrackerai_sessions
     }
     trajectories_paths = {
