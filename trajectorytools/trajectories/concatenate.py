@@ -57,12 +57,12 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
     return True, np.concatenate([ta, tb[:, best_ids, :]], axis=0)
 
 
-def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
+def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
 
     if len(t_list) == 1:
         return (True, t_list[0])
 
-    status, concatenation_until_now = _concatenate_np(t_list[:-1])
+    status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index)
 
     if not status:
         return (False, concatenation_until_now)
@@ -70,7 +70,7 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
         try:
             return _concatenate_two_np(concatenation_until_now, t_list[-1])
         except Exception as error:
-            logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1} and {len(t_list[:-1])}")
+            logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1+zero_index} and {len(t_list[:-1])+zero_index}")
             logger.error(error)
             return (False, concatenation_until_now)
 
@@ -78,15 +78,15 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 # Obtain trajectories from concatenation
 
 
-def from_several_positions(t_list: List[np.ndarray], **kwargs) -> Trajectories:
+def from_several_positions(t_list: List[np.ndarray], zero_index=0, **kwargs) -> Trajectories:
     """Obtains a single trajectory object from a concatenation
     of several arrays representing locations
     """
-    status, t_concatenated = _concatenate_np(t_list)
+    status, t_concatenated = _concatenate_np(t_list, zero_index=zero_index)
     return Trajectories.from_positions(t_concatenated, **kwargs)
 
 
-def _concatenate_idtrackerai_dicts(traj_dicts):
+def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
     """Concatenates several idtrackerai dictionaries.
 
     The output contains:
@@ -95,7 +95,8 @@ def _concatenate_idtrackerai_dicts(traj_dicts):
     """
     traj_dict_cat = traj_dicts[0].copy()
     status, traj_cat = _concatenate_np(
-        [traj_dict["trajectories"] for traj_dict in traj_dicts]
+        [traj_dict["trajectories"] for traj_dict in traj_dicts],
+        **kwargs
     )
     traj_dict_cat["trajectories"] = traj_cat
     return traj_dict_cat
@@ -170,7 +171,7 @@ def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
 
 
 def from_several_idtracker_files(
-    trajectories_paths, chunks=None, verbose=False, **kwargs
+    trajectories_paths, zero_index=0, **kwargs
 ):
 
     traj_dicts = []
@@ -181,7 +182,7 @@ def from_several_idtracker_files(
         ).item()
         traj_dicts.append(traj_dict)
 
-    traj_dict = _concatenate_idtrackerai_dicts(traj_dicts)
+    traj_dict = _concatenate_idtrackerai_dicts(traj_dicts, zero_index=zero_index)
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
