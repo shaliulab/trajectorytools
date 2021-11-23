@@ -63,11 +63,15 @@ def get_first_index(arr):
     return index
 
 
-def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0):
+def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, strict=True):
     # Shape of ta, tb: (frames, individuals, 2)
 
-    last_index = get_last_index(ta)
-    first_index = get_first_index(tb)
+    if strict:
+        last_index = -1
+        first_index = 0
+    else:
+        last_index = get_last_index(ta)
+        first_index = get_first_index(tb)
 
     if last_index != -1 or first_index != 0:
         logger.warning(f"""Concatenation between chunks \
@@ -87,12 +91,12 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0):
     return True, np.concatenate([ta, tb[:, best_ids, :]], axis=0)
 
 
-def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
+def _concatenate_np(t_list: List[np.ndarray], zero_index=0, strict=True) -> np.ndarray:
 
     if len(t_list) == 1:
         return (True, t_list[0])
 
-    status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index)
+    status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index, strict=strict)
 
     last_concat_chunk = len(t_list[:-1])-1+zero_index
 
@@ -100,7 +104,7 @@ def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
         return (status, concatenation_until_now)
     else:
         try:
-            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk)
+            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk, strict=strict)
         except Exception as error:
             logger.error(f"Concatenation error between 0-based chunks {last_concat_chunk} and {last_concat_chunk+1}")
             logger.error(error)
@@ -110,11 +114,11 @@ def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
 # Obtain trajectories from concatenation
 
 
-def from_several_positions(t_list: List[np.ndarray], zero_index=0, **kwargs) -> Trajectories:
+def from_several_positions(t_list: List[np.ndarray], zero_index=0, strict=True, **kwargs) -> Trajectories:
     """Obtains a single trajectory object from a concatenation
     of several arrays representing locations
     """
-    status, t_concatenated = _concatenate_np(t_list, zero_index=zero_index)
+    status, t_concatenated = _concatenate_np(t_list, zero_index=zero_index, strict=strict)
     return Trajectories.from_positions(t_concatenated, **kwargs)
 
 
