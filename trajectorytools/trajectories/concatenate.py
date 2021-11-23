@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 # Utils
 
+def check_array_has_no_nans(arr):
+    return not np.isnan(arr).any()
+
 
 def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
 
@@ -28,8 +31,9 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
         )
 
     try:
-        assert not np.isnan(xa).any()
-        assert not np.isnan(xb).any()
+        assert check_array_has_no_nans(xa)
+        assert check_array_has_no_nans(xb)
+
     except AssertionError as error:
         raise ValueError(
             "The identity matching in the contiguous frames is ambiguous"
@@ -44,10 +48,36 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
     return col_ind
 
 
-def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
+def get_last_index(arr):
+
+    index = -1
+    while not check_array_has_no_nans(arr[index,:]):
+        index -= 1
+    return index
+
+def get_first_index(arr):
+
+    index = 0
+    while not check_array_has_no_nans(arr[index,:]):
+        index += 1
+    return index
+
+
+def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0):
     # Shape of ta, tb: (frames, individuals, 2)
+
+    last_index = get_last_index(ta)
+    first_index = get_first_index(tb)
+
+    # if last_index != -1 or first_index != 0:
+    #     logger.warnig(f"""Concatenation between chunks \
+    #     {chunk_id}-{chunk_id+1} will use \
+    #     {last_index} frame from left chunk and \
+    #     {first_index} from right chunk
+    #     """)
+
     try:
-        best_ids = _best_ids(ta[-1, :], tb[0, :])
+        best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
     except ValueError as error:
         logger.error(
             f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}"
