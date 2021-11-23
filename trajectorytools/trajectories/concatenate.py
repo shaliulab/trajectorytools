@@ -225,12 +225,12 @@ def from_several_idtracker_files(
     return status, tr
 
 
-def diagnose_concatenation(trajectories_paths):
+def diagnose_concatenation(trajectories_paths, **kwargs):
 
     problematic_junctions = []
     zero_index = 0
     while True:
-        last_concat, _ =from_several_idtracker_files(trajectories_paths[zero_index:], zero_index=zero_index)
+        last_concat, _ = from_several_idtracker_files(trajectories_paths[zero_index:], zero_index=zero_index, **kwargs)
         if last_concat is True:
             break
 
