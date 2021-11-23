@@ -62,14 +62,17 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
     if len(t_list) == 1:
         return t_list[0]
 
-    concatenation_until_now = _concatenate_np(t_list[:-1])
+    status, concatenation_until_now = _concatenate_np(t_list[:-1])
 
-    try:
-        return _concatenate_two_np(concatenation_until_now, t_list[-1])
-    except Exception as error:
-        logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1} and {len(t_list[:-1])}")
-        logger.error(error)
-        return concatenation_until_now
+    if not status:
+        return False, concatenation_until_now
+    else:
+        try:
+            return True, _concatenate_two_np(concatenation_until_now, t_list[-1])
+        except Exception as error:
+            logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1} and {len(t_list[:-1])}")
+            logger.error(error)
+            return False, concatenation_until_now
 
 
 # Obtain trajectories from concatenation
