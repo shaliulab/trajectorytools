@@ -8,9 +8,11 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import List
+
 logger = logging.getLogger(__name__)
 
 # Utils
+
 
 def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
 
@@ -21,13 +23,17 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
         assert xa.shape == (number_of_individuals, 2)
         assert xb.shape == (number_of_individuals, 2)
     except AssertionError as error:
-        raise ValueError("The number of individuals in the contiguous frames is not the same")
+        raise ValueError(
+            "The number of individuals in the contiguous frames is not the same"
+        )
 
     try:
         assert not np.isnan(xa).any()
         assert not np.isnan(xb).any()
     except AssertionError as error:
-        raise ValueError("The identity matching in the contiguous frames is ambiguous")
+        raise ValueError(
+            "The identity matching in the contiguous frames is ambiguous"
+        )
 
     # We calculate the matrix of all distances between
     # all points in a and all points in b, and then find
@@ -43,7 +49,9 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
     try:
         best_ids = _best_ids(ta[-1, :], tb[0, :])
     except ValueError as error:
-        logger.error(f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}")
+        logger.error(
+            f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}"
+        )
         raise error
 
     return np.concatenate([ta, tb[:, best_ids, :]], axis=0)
