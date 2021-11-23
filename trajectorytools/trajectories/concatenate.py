@@ -8,9 +8,11 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import List
+
 logger = logging.getLogger(__name__)
 
 # Utils
+
 
 def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
 
@@ -21,13 +23,17 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
         assert xa.shape == (number_of_individuals, 2)
         assert xb.shape == (number_of_individuals, 2)
     except AssertionError as error:
-        raise ValueError("The number of individuals in the contiguous frames is not the same")
+        raise ValueError(
+            "The number of individuals in the contiguous frames is not the same"
+        )
 
     try:
         assert not np.isnan(xa).any()
         assert not np.isnan(xb).any()
     except AssertionError as error:
-        raise ValueError("The identity matching in the contiguous frames is ambiguous")
+        raise ValueError(
+            "The identity matching in the contiguous frames is ambiguous"
+        )
 
     # We calculate the matrix of all distances between
     # all points in a and all points in b, and then find
@@ -43,10 +49,13 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
     try:
         best_ids = _best_ids(ta[-1, :], tb[0, :])
     except ValueError as error:
-        logger.error(f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}")
+        logger.error(
+            f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}"
+        )
         raise error
 
     return np.concatenate([ta, tb[:, best_ids, :]], axis=0)
+
 
 def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 
@@ -54,6 +63,7 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
         return t_list[0]
     # return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
     return _concatenate_two_np(_concatenate_np(t_list[:-1]), t_list[-1])
+
 
 # Obtain trajectories from concatenation
 
@@ -85,8 +95,12 @@ def pick_trajectory_file(session_folder):
     """Select the best trajectories file
     available in an idtrackerai session
     """
-    trajectories = os.path.join(session_folder, "trajectories", "trajectories.npy")
-    trajectories_wo_gaps = os.path.join(session_folder, "trajectories_wo_gaps", "trajectories_wo_gaps.npy")
+    trajectories = os.path.join(
+        session_folder, "trajectories", "trajectories.npy"
+    )
+    trajectories_wo_gaps = os.path.join(
+        session_folder, "trajectories_wo_gaps", "trajectories_wo_gaps.npy"
+    )
 
     if os.path.exists(trajectories_wo_gaps):
         return trajectories_wo_gaps
@@ -97,27 +111,37 @@ def pick_trajectory_file(session_folder):
 
 
 def is_idtrackerai_session(path):
-    """Check whether the passed path is an idtrackerai session
-    """
+    """Check whether the passed path is an idtrackerai session"""
     return re.search("session_.*", path) and os.path.isdir(path)
 
+
 def get_trajectories(idtrackerai_collection_folder):
-    """Return a list of all trajectory files available in an idtrackerai collection folder
-    """
+    """Return a list of all trajectory files available in an idtrackerai collection folder"""
     file_contents = os.listdir(idtrackerai_collection_folder)
 
-    file_contents = [os.path.join(idtrackerai_collection_folder, folder) for folder in file_contents]
+    file_contents = [
+        os.path.join(idtrackerai_collection_folder, folder)
+        for folder in file_contents
+    ]
 
     idtrackerai_sessions = []
     for folder in file_contents:
         if is_idtrackerai_session(folder):
             idtrackerai_sessions.append(folder)
 
-    trajectories_paths = {os.path.basename(session): pick_trajectory_file(session) for session in idtrackerai_sessions}
-    trajectories_paths = {k: v for k, v in trajectories_paths.items() if not v is None}
+    trajectories_paths = {
+        os.path.basename(session): pick_trajectory_file(session)
+        for session in idtrackerai_sessions
+    }
+    trajectories_paths = {
+        k: v for k, v in trajectories_paths.items() if not v is None
+    }
     return trajectories_paths
 
-def from_several_idtracker_files(trajectories_paths, chunks=None, verbose=False, **kwargs):
+
+def from_several_idtracker_files(
+    trajectories_paths, chunks=None, verbose=False, **kwargs
+):
 
     traj_dicts = []
 
