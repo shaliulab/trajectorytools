@@ -69,12 +69,12 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0):
     last_index = get_last_index(ta)
     first_index = get_first_index(tb)
 
-    # if last_index != -1 or first_index != 0:
-    #     logger.warnig(f"""Concatenation between chunks \
-    #     {chunk_id}-{chunk_id+1} will use \
-    #     {last_index} frame from left chunk and \
-    #     {first_index} from right chunk
-    #     """)
+    if last_index != -1 or first_index != 0:
+        logger.warning(f"""Concatenation between chunks \
+        {chunk_id}-{chunk_id+1} will use \
+        {last_index} frame from left chunk and \
+        {first_index} from right chunk
+        """)
 
     try:
         best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
@@ -94,13 +94,14 @@ def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
 
     status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index)
 
+    last_concat_chunk = len(t_list[:-1])-1+zero_index
+
     if not status is True:
         return (status, concatenation_until_now)
     else:
         try:
-            return _concatenate_two_np(concatenation_until_now, t_list[-1])
+            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk)
         except Exception as error:
-            last_concat_chunk = len(t_list[:-1])-1+zero_index
             logger.error(f"Concatenation error between 0-based chunks {last_concat_chunk} and {last_concat_chunk+1}")
             logger.error(error)
             return (last_concat_chunk, concatenation_until_now)
@@ -232,5 +233,5 @@ def diagnose_concatenation(trajectories_paths):
         problematic_junctions.append(last_concat)
         zero_index = last_concat + 1
         print(zero_index)
-    
+
     return problematic_junctions
