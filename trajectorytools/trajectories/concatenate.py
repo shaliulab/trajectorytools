@@ -105,7 +105,7 @@ def _pick_trajectory_file(trajectories_folder):
     """
     trajectory_files = sorted(
         [f for f in os.listdir(trajectories_folder)],
-        key=lambda x: os.path.splitext(x)[0]
+        key=lambda x: os.path.splitext(x)[0],
     )
     return os.path.join(trajectories_folder, trajectory_files[-1])
 
