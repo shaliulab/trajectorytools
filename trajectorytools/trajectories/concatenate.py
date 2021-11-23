@@ -1,6 +1,6 @@
-import re
 import os.path
 import logging
+import sys
 
 from trajectorytools.trajectories import import_idtrackerai_dict
 from .trajectories import Trajectories
@@ -61,12 +61,15 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 
     if len(t_list) == 1:
         return t_list[0]
-    # return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
+
+    concatenation_until_now = _concatenate_np(t_list[:-1])
+
     try:
-        return _concatenate_two_np(_concatenate_np(t_list[:-1]), t_list[-1])
+        return _concatenate_two_np(concatenation_until_now, t_list[-1])
     except Exception as error:
         logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1} and {len(t_list[:-1])}")
-        raise error
+        logger.error(error)
+        return concatenation_until_now
 
 
 # Obtain trajectories from concatenation
