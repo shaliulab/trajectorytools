@@ -188,3 +188,19 @@ def from_several_idtracker_files(
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
     return status, tr
+
+
+def diagnose_concatenation(trajectories_paths):
+
+    problematic_junctions = []
+    zero_index = 0
+    while True:
+        last_concat, _ =from_several_idtracker_files(trajectories_paths[zero_index:], zero_index=zero_index)
+        if last_concat is True:
+            break
+
+        problematic_junctions.append(last_concat)
+        zero_index = last_concat + 1
+        print(zero_index)
+    
+    return problematic_junctions
