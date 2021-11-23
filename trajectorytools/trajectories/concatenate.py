@@ -54,25 +54,25 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
         )
         raise error
 
-    return np.concatenate([ta, tb[:, best_ids, :]], axis=0)
+    return True, np.concatenate([ta, tb[:, best_ids, :]], axis=0)
 
 
 def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 
     if len(t_list) == 1:
-        return t_list[0]
+        return (True, t_list[0])
 
     status, concatenation_until_now = _concatenate_np(t_list[:-1])
 
     if not status:
-        return False, concatenation_until_now
+        return (False, concatenation_until_now)
     else:
         try:
-            return True, _concatenate_two_np(concatenation_until_now, t_list[-1])
+            return _concatenate_two_np(concatenation_until_now, t_list[-1])
         except Exception as error:
             logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1} and {len(t_list[:-1])}")
             logger.error(error)
-            return False, concatenation_until_now
+            return (False, concatenation_until_now)
 
 
 # Obtain trajectories from concatenation
@@ -82,7 +82,7 @@ def from_several_positions(t_list: List[np.ndarray], **kwargs) -> Trajectories:
     """Obtains a single trajectory object from a concatenation
     of several arrays representing locations
     """
-    t_concatenated = _concatenate_np(t_list)
+    status, t_concatenated = _concatenate_np(t_list)
     return Trajectories.from_positions(t_concatenated, **kwargs)
 
 
@@ -94,7 +94,7 @@ def _concatenate_idtrackerai_dicts(traj_dicts):
     - the values of the first diccionary for all other keys
     """
     traj_dict_cat = traj_dicts[0].copy()
-    traj_cat = _concatenate_np(
+    status, traj_cat = _concatenate_np(
         [traj_dict["trajectories"] for traj_dict in traj_dicts]
     )
     traj_dict_cat["trajectories"] = traj_cat
