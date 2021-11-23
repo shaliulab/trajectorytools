@@ -64,15 +64,16 @@ def _concatenate_np(t_list: List[np.ndarray], zero_index=0) -> np.ndarray:
 
     status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index)
 
-    if not status:
-        return (False, concatenation_until_now)
+    if not status is True:
+        return (status, concatenation_until_now)
     else:
         try:
             return _concatenate_two_np(concatenation_until_now, t_list[-1])
         except Exception as error:
-            logger.error(f"Concatenation error between 0-based chunks {len(t_list[:-1])-1+zero_index} and {len(t_list[:-1])+zero_index}")
+            last_concat_chunk = len(t_list[:-1])-1+zero_index
+            logger.error(f"Concatenation error between 0-based chunks {last_concat_chunk} and {last_concat_chunk+1}")
             logger.error(error)
-            return (False, concatenation_until_now)
+            return (last_concat_chunk, concatenation_until_now)
 
 
 # Obtain trajectories from concatenation
@@ -99,7 +100,7 @@ def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
         **kwargs
     )
     traj_dict_cat["trajectories"] = traj_cat
-    return traj_dict_cat
+    return status, traj_dict_cat
 
 
 def _pick_trajectory_file(trajectories_folder, pref_index=-1):
@@ -182,8 +183,8 @@ def from_several_idtracker_files(
         ).item()
         traj_dicts.append(traj_dict)
 
-    traj_dict = _concatenate_idtrackerai_dicts(traj_dicts, zero_index=zero_index)
+    status, traj_dict = _concatenate_idtrackerai_dicts(traj_dicts, zero_index=zero_index)
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
-    return tr
+    return status, tr
