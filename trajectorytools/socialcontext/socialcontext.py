@@ -14,8 +14,7 @@ def _in_convex_hull(positions):
 
 def in_convex_hull(positions):
     convex_hull_list = [
-        _in_convex_hull(positions_in_frame)
-        for positions_in_frame in positions
+        _in_convex_hull(positions_in_frame) for positions_in_frame in positions
     ]
     return np.stack(convex_hull_list, axis=0)
 
@@ -26,9 +25,7 @@ def circumradius(points):
     """
     # Sides of triangles
     side_vectors = points - np.roll(points, 1, axis=-2)
-    sides = np.sqrt(
-        side_vectors[..., 0] ** 2 + side_vectors[..., 1] ** 2
-    )
+    sides = np.sqrt(side_vectors[..., 0] ** 2 + side_vectors[..., 1] ** 2)
     a = sides[..., 0]
     b = sides[..., 1]
     c = sides[..., 2]
@@ -164,9 +161,7 @@ def adjacency_matrix(
             dtype=positions.dtype,
         )
     else:
-        raise ValueError(
-            "mode should be 'connectivity' or 'distance'"
-        )
+        raise ValueError("mode should be 'connectivity' or 'distance'")
 
     if (num_neighbours == individuals - 1) and use_pdist_if_all_nb:
         if mode == "connectivity":
@@ -212,9 +207,7 @@ def restrict(data, indices, individual=None):
             dtype=data.dtype,
         )
         for frame in range(total_time_steps):
-            output_data[frame, ...] = data[
-                frame, indices[frame, :], :
-            ]
+            output_data[frame, ...] = data[frame, indices[frame, :], :]
     else:
         output_data = np.empty(
             [total_time_steps, num_restricted, coordinates],

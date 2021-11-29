@@ -26,9 +26,7 @@ def plot_bouts(ax, starting_frame, focal, num_frames=220):
             1,
         ]
     )
-    ax.plot(
-        np.asarray(frame_range), tr.speed[frame_range, focal], c="b"
-    )
+    ax.plot(np.asarray(frame_range), tr.speed[frame_range, focal], c="b")
     for starting_bout in starting_bouts:
         ax.axvline(x=starting_bout, c="g")
     for bout_peak in bout_peaks:
