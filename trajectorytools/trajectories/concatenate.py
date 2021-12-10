@@ -1,6 +1,6 @@
-import re
 import os.path
 import logging
+import sys
 
 from trajectorytools.trajectories import import_idtrackerai_dict
 from .trajectories import Trajectories
@@ -13,15 +13,31 @@ logger = logging.getLogger(__name__)
 
 # Utils
 
+def check_array_has_no_nans(arr):
+    return not np.isnan(arr).any()
+
 
 def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
 
     # Input: two arrays of locations of the same shape
     number_of_individuals = xa.shape[0]
-    assert xa.shape == (number_of_individuals, 2)
-    assert xb.shape == (number_of_individuals, 2)
-    assert not np.isnan(xa).any()
-    assert not np.isnan(xb).any()
+    try:
+
+        assert xa.shape == (number_of_individuals, 2)
+        assert xb.shape == (number_of_individuals, 2)
+    except AssertionError as error:
+        raise ValueError(
+            "The number of individuals in the contiguous frames is not the same"
+        )
+
+    try:
+        assert check_array_has_no_nans(xa)
+        assert check_array_has_no_nans(xb)
+
+    except AssertionError as error:
+        raise ValueError(
+            "The identity matching in the contiguous frames is ambiguous"
+        )
 
     # We calculate the matrix of all distances between
     # all points in a and all points in b, and then find
@@ -32,42 +48,84 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
     return col_ind
 
 
-def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray):
+def get_last_index(arr):
+
+    index = -1
+    while not check_array_has_no_nans(arr[index,:]):
+        index -= 1
+    return index
+
+def get_first_index(arr):
+
+    index = 0
+    while not check_array_has_no_nans(arr[index,:]):
+        index += 1
+    return index
+
+
+def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, strict=True):
     # Shape of ta, tb: (frames, individuals, 2)
-    best_ids = _best_ids(ta[-1, :], tb[0, :])
-    return np.concatenate([ta, tb[:, best_ids, :]], axis=0)
+
+    if strict:
+        last_index = -1
+        first_index = 0
+    else:
+        last_index = get_last_index(ta)
+        first_index = get_first_index(tb)
+
+    if last_index != -1 or first_index != 0:
+
+        logger.warning(
+            "Concatenation between chunks "
+            f"{chunk_id}-{chunk_id+1} will use "
+            f"frame {tb.shape[0] + last_index} from left chunk and "
+            f"and frame {first_index} from right chunk. "
+            "Indices are 0-based"
+        )
+
+    try:
+        best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
+    except ValueError as error:
+        logger.error(
+            f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}"
+        )
+        raise error
+
+    return True, np.concatenate([ta, tb[:, best_ids, :]], axis=0)
 
 
-def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
+def _concatenate_np(t_list: List[np.ndarray], zero_index=0, strict=True) -> np.ndarray:
 
     if len(t_list) == 1:
-        return t_list[0]
-    try:
-        concat = _concatenate_np(t_list[:-1])
-        if concat is not None:
-            ext_concat = _concatenate_two_np(concat, t_list[-1])
-            return ext_concat
-    except Exception as error:
-        logger.error(error)
-        logger.error(f"Error when {len(t_list)}")
-        return None
+        return (True, t_list[0])
 
+    status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index, strict=strict)
+
+    last_concat_chunk = len(t_list[:-1])-1+zero_index
+
+    if not status is True:
+        return (status, concatenation_until_now)
+    else:
+        try:
+            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk, strict=strict)
+        except Exception as error:
+            logger.error(f"Concatenation error between 0-based chunks {last_concat_chunk} and {last_concat_chunk+1}")
+            logger.error(error)
+            return (last_concat_chunk, concatenation_until_now)
 
 
 # Obtain trajectories from concatenation
 
 
-def from_several_positions(
-    t_list: List[np.ndarray], **kwargs
-) -> Trajectories:
+def from_several_positions(t_list: List[np.ndarray], zero_index=0, strict=True, **kwargs) -> Trajectories:
     """Obtains a single trajectory object from a concatenation
     of several arrays representing locations
     """
-    t_concatenated = _concatenate_np(t_list)
+    status, t_concatenated = _concatenate_np(t_list, zero_index=zero_index, strict=strict)
     return Trajectories.from_positions(t_concatenated, **kwargs)
 
 
-def _concatenate_idtrackerai_dicts(traj_dicts):
+def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
     """Concatenates several idtrackerai dictionaries.
 
     The output contains:
@@ -75,14 +133,15 @@ def _concatenate_idtrackerai_dicts(traj_dicts):
     - the values of the first diccionary for all other keys
     """
     traj_dict_cat = traj_dicts[0].copy()
-    traj_cat = _concatenate_np(
-        [traj_dict["trajectories"] for traj_dict in traj_dicts]
+    status, traj_cat = _concatenate_np(
+        [traj_dict["trajectories"] for traj_dict in traj_dicts],
+        **kwargs
     )
     traj_dict_cat["trajectories"] = traj_cat
-    return traj_dict_cat
+    return status, traj_dict_cat
 
 
-def _pick_trajectory_file(trajectories_folder):
+def _pick_trajectory_file(trajectories_folder, pref_index=-1):
     """
     Return the path to the last trajectory file in this folder
     based on the timestamp suffix added when
@@ -92,32 +151,33 @@ def _pick_trajectory_file(trajectories_folder):
     is run.
 
     The original file without the timestamp, produced by idtrackerai alone,
-    will be selected last
+    will be selected last by default
     """
     trajectory_files = sorted(
         [f for f in os.listdir(trajectories_folder)],
         key=lambda x: os.path.splitext(x)[0],
     )
-    return os.path.join(trajectories_folder, trajectory_files[-1])
+    return os.path.join(trajectories_folder, trajectory_files[pref_index])
 
 
-def pick_w_wo_gaps(session_folder):
+def pick_w_wo_gaps(session_folder, allow_human=True):
     """Select the best trajectories file
     available in an idtrackerai session
     """
-    trajectories_wo_gaps = os.path.join(
-        session_folder, "trajectories_wo_gaps"
-    )
+    trajectories_wo_gaps = os.path.join(session_folder, "trajectories_wo_gaps")
     trajectories = os.path.join(session_folder, "trajectories")
 
-    if os.path.exists(trajectories_wo_gaps):
-        return _pick_trajectory_file(trajectories_wo_gaps)
-    elif os.path.exists(trajectories):
-        return _pick_trajectory_file(trajectories)
+    if allow_human:
+        pref_index=-1
     else:
-        raise Exception(
-            f"Session {session_folder} has no trajectories"
-        )
+        pref_index=0
+
+    if os.path.exists(trajectories_wo_gaps):
+        return _pick_trajectory_file(trajectories_wo_gaps, pref_index)
+    elif os.path.exists(trajectories):
+        return _pick_trajectory_file(trajectories, pref_index)
+    else:
+        raise Exception(f"Session {session_folder} has no trajectories")
 
 
 def is_idtrackerai_session(path):
@@ -125,7 +185,10 @@ def is_idtrackerai_session(path):
     return os.path.exists(os.path.join(path, "video_object.npy"))
 
 
-def get_trajectories(idtrackerai_collection_folder):
+def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
+    """Return a list of all trajectory files available
+    in an idtrackerai collection folder
+    """
     """Return a list of all trajectory files available in an idtrackerai collection folder"""
     file_contents = os.listdir(idtrackerai_collection_folder)
 
@@ -140,17 +203,19 @@ def get_trajectories(idtrackerai_collection_folder):
             idtrackerai_sessions.append(folder)
 
     trajectories_paths = {
-        os.path.basename(session): pick_w_wo_gaps(session)
+        os.path.basename(session): pick_w_wo_gaps(session, *args, **kwargs)
         for session in idtrackerai_sessions
     }
     trajectories_paths = {
-        k: v for k, v in trajectories_paths.items() if not v is None
+        k: v for k, v in trajectories_paths.items() if v is not None
     }
+
+    trajectories_paths = {k: trajectories_paths[k] for k in sorted(list(trajectories_paths.keys()))}
     return trajectories_paths
 
 
 def from_several_idtracker_files(
-    trajectories_paths, chunks=None, verbose=False, **kwargs
+    trajectories_paths, zero_index=0, strict=True, **kwargs
 ):
 
     traj_dicts = []
@@ -161,12 +226,30 @@ def from_several_idtracker_files(
         ).item()
         traj_dicts.append(traj_dict)
 
-    traj_dict = _concatenate_idtrackerai_dicts(traj_dicts)
+    status, traj_dict = _concatenate_idtrackerai_dicts(
+        traj_dicts,
+        zero_index=zero_index, strict=strict
+    )
     if traj_dict["setup_points"] is None:
         traj_dict.pop("setup_points")
 
-    import ipdb; ipdb.set_trace()
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
-    return tr
+    return status, tr
+
+
+def diagnose_concatenation(trajectories_paths, **kwargs):
+
+    problematic_junctions = []
+    zero_index = 0
+    while True:
+        last_concat, _ = from_several_idtracker_files(trajectories_paths[zero_index:], zero_index=zero_index, **kwargs)
+        if last_concat is True:
+            break
+
+        problematic_junctions.append(last_concat)
+        zero_index = last_concat + 1
+        print(zero_index)
+
+    return problematic_junctions
