@@ -2,8 +2,9 @@ import os.path
 import logging
 import sys
 
-from trajectorytools.trajectories import import_idtrackerai_dict
-from .trajectories import Trajectories
+from .trajectories import Trajectories, import_idtrackerai_dict
+
+
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
@@ -17,7 +18,7 @@ def check_array_has_no_nans(arr):
     return not np.isnan(arr).any()
 
 
-def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
+def _compute_distance_matrix(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
 
     # Input: two arrays of locations of the same shape
     number_of_individuals = xa.shape[0]
@@ -43,6 +44,12 @@ def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
     # all points in a and all points in b, and then find
     # the assignment that minimises the sum of distances
     distances = cdist(xa, xb)
+    return distances
+
+
+def _best_ids(xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
+
+    distances = _compute_distance_matrix(xa, xb)
     _, col_ind = linear_sum_assignment(distances)
 
     return col_ind
