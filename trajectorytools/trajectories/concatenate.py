@@ -1,5 +1,6 @@
 import re
 import os.path
+import logging
 
 from trajectorytools.trajectories import import_idtrackerai_dict
 from .trajectories import Trajectories
@@ -7,6 +8,8 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 # Utils
 
@@ -39,7 +42,16 @@ def _concatenate_np(t_list: List[np.ndarray]) -> np.ndarray:
 
     if len(t_list) == 1:
         return t_list[0]
-    return _concatenate_two_np(t_list[0], _concatenate_np(t_list[1:]))
+    try:
+        concat = _concatenate_np(t_list[:-1])
+        if concat is not None:
+            ext_concat = _concatenate_two_np(concat, t_list[-1])
+            return ext_concat
+    except Exception as error:
+        logger.error(error)
+        logger.error(f"Error when {len(t_list)}")
+        return None
+
 
 
 # Obtain trajectories from concatenation
@@ -150,6 +162,10 @@ def from_several_idtracker_files(
         traj_dicts.append(traj_dict)
 
     traj_dict = _concatenate_idtrackerai_dicts(traj_dicts)
+    if traj_dict["setup_points"] is None:
+        traj_dict.pop("setup_points")
+
+    import ipdb; ipdb.set_trace()
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
