@@ -44,7 +44,11 @@ def _radius_and_center_from_traj_dict(locations, traj_dict):
     :param locations: Numpy array of locations. Last dim must be (x, y)
     :param traj_dict:
     """
-    if "setup_points" in traj_dict and "border" in traj_dict["setup_points"]:
+    if (
+        "setup_points" in traj_dict
+        and not traj_dict["setup_points"] is None
+        and "border" in traj_dict["setup_points"]
+    ):
         center_a, radius = estimate_center_and_radius(
             traj_dict["setup_points"]["border"]
         )
