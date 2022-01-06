@@ -164,14 +164,17 @@ def _pick_trajectory_file(trajectories_folder, pref_index=-1):
         [f for f in os.listdir(trajectories_folder)],
         key=lambda x: os.path.splitext(x)[0],
     )
-    return os.path.join(trajectories_folder, trajectory_files[pref_index])
+
+    if len(trajectory_files) == 0:
+        raise Exception(f"Session {session_folder} has no trajectories")
+    else:
+        return os.path.join(trajectories_folder, trajectory_files[pref_index])
 
 
 def pick_w_wo_gaps(session_folder, allow_human=True):
     """Select the best trajectories file
     available in an idtrackerai session
     """
-    trajectories_wo_gaps = os.path.join(session_folder, "trajectories_wo_gaps")
     trajectories = os.path.join(session_folder, "trajectories")
 
     if allow_human:
@@ -179,12 +182,7 @@ def pick_w_wo_gaps(session_folder, allow_human=True):
     else:
         pref_index=0
 
-    if os.path.exists(trajectories_wo_gaps):
-        return _pick_trajectory_file(trajectories_wo_gaps, pref_index)
-    elif os.path.exists(trajectories):
-        return _pick_trajectory_file(trajectories, pref_index)
-    else:
-        raise Exception(f"Session {session_folder} has no trajectories")
+    return _pick_trajectory_file(trajectories, pref_index)
 
 
 def is_idtrackerai_session(path):
@@ -209,10 +207,11 @@ def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
         if is_idtrackerai_session(folder):
             idtrackerai_sessions.append(folder)
 
-    trajectories_paths = {
-        os.path.basename(session): pick_w_wo_gaps(session, *args, **kwargs)
-        for session in idtrackerai_sessions
-    }
+    trajectories_paths = {}
+    for session in sorted(idtrackerai_sessions):
+        trajectory_file = pick_w_wo_gaps(session, *args, **kwargs)
+        trajectories_paths[os.path.basename(session)] = trajectory_file
+
     trajectories_paths = {
         k: v for k, v in trajectories_paths.items() if v is not None
     }
