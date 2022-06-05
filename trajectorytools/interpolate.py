@@ -15,14 +15,19 @@ def interpolate_nans(t):
     """
     shape_t = t.shape
     reshaped_t = t.reshape((shape_t[0], -1))
+    all_nans = []
     for timeseries in range(reshaped_t.shape[-1]):
         y = reshaped_t[:, timeseries]
         nans, x = _nan_helper(y)
         y[nans] = np.interp(x(nans), x(~nans), y[~nans])
+        all_nans.append(nans)
 
     # Ugly slow hack, as reshape seems not to return a view always
     back_t = reshaped_t.reshape(shape_t)
     t[...] = back_t
+    all_nans = np.stack(all_nans, axis=1).reshape(shape_t)
+    return all_nans
+
 
 
 def resample(x, up, down, params={}):
@@ -190,15 +195,38 @@ def smooth_acceleration(t, **kwargs):
     return smooth(t, **kwargs)
 
 
-def velocity_acceleration_backwards(t, k_v_history=0.0):
+def velocity_acceleration_backwards(t, k_v_history=0.0, timestamps=None):
     v = (1 - k_v_history) * (t[2:] - t[1:-1]) + k_v_history * (
         t[2:] - t[:-2]
     ) / 2
     a = t[2:] - 2 * t[1:-1] + t[:-2]
-    return t[2:], v, a
+    return t[2:], v, a, timestamps
 
 
-def velocity_acceleration(t):
+def velocity_acceleration(t, timestamps=None):
     v = (t[2:] - t[:-2]) / 2
     a = t[2:] - 2 * t[1:-1] + t[:-2]
-    return t[1:-1], v, a
+    return t[1:-1], v, a, timestamps
+
+
+def velocity_acceleration_pad(t, timestamps=None):
+
+
+    if timestamps is not None:
+        # replicate for each animal
+        timestamps = np.stack([timestamps for _ in range(t.shape[1])], axis=1)
+        # add a dummy last dimension to comply with the expected bidimensional data (x, y)
+        timestamps = timestamps[:, :, np.newaxis]
+        dt = timestamps[2:] - timestamps[:-2]     
+    else:
+        dt = 2
+
+    v = (t[2:] - t[:-2]) / dt
+    # TODO I do not understand this equation
+    a = t[2:] - 2 * t[1:-1] + t[:-2]
+
+    null = np.zeros_like(v[0,:,:])[np.newaxis,:,:]
+    v = np.concatenate([null, v, null])
+    null = np.zeros_like(a[0,:,:])[np.newaxis,:,:]
+    a = np.concatenate([null, a, null])
+    return t, v, a, timestamps

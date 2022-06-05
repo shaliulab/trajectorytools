@@ -88,6 +88,7 @@ def import_idtrackerai_file(trajectories_path, **kwargs):
 
 def import_idtrackerai_dict(
     traj_dict,
+    timestamps=None,
     interpolate_nans=True,
     center=False,
     smooth_params=None,
@@ -111,6 +112,7 @@ def import_idtrackerai_dict(
 
     traj = cls.from_positions(
         t,
+        timestamps=timestamps,
         interpolate_nans=interpolate_nans,
         smooth_params=smooth_params,
     )
@@ -130,7 +132,7 @@ def import_idtrackerai_dict(
 
 
 class Trajectory:
-    keys_to_copy = ["_s", "_v", "_a"]
+    keys_to_copy = ["_s", "_v", "_a", "_t", "_n"]
     own_params = True
 
     def __init__(self, trajectories, params):
@@ -163,6 +165,14 @@ class Trajectory:
     @property
     def number_of_frames(self):
         return self._s.shape[0]
+
+    @property
+    def n(self):
+        return self._n
+
+    @property
+    def t(self):
+        return self._t * self.params["time_unit"]
 
     @property
     def s(self):
@@ -391,7 +401,7 @@ class Trajectories(Trajectory):
         return import_idtrackerai_file(trajectories_path, **kwargs, cls=cls)
 
     @classmethod
-    def from_positions(cls, t, interpolate_nans=True, smooth_params=None):
+    def from_positions(cls, t, timestamps=None, interpolate_nans=True, smooth_params=None):
         """Trajectory from positions
 
         :param t: Positions nd.array.
@@ -402,7 +412,9 @@ class Trajectories(Trajectory):
             smooth_params = {"sigma": -1, "only_past": False}
         # Interpolate trajectories
         if interpolate_nans:
-            tt.interpolate_nans(t)
+            nans = tt.interpolate_nans(t)
+        else:
+            nans = np.zeros_like(t, dtype=np.bool8)
 
         displacement = np.array([0.0, 0.0])
 
@@ -413,19 +425,22 @@ class Trajectories(Trajectory):
             t_smooth = t
 
         trajectories = {}
+        trajectories["_n"] = nans
 
         if smooth_params.get("only_past", False):
             [
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration_backwards(t_smooth)
+                trajectories["_t"],
+            ] = tt.velocity_acceleration_backwards(t_smooth, timestamps=timestamps)
         else:
             [
                 trajectories["_s"],
                 trajectories["_v"],
                 trajectories["_a"],
-            ] = tt.velocity_acceleration(t_smooth)
+                trajectories["_t"]
+            ] = tt.velocity_acceleration_pad(t_smooth, timestamps=timestamps)
 
         # TODO: Organise the params dictionary more hierarchically
         # Maybe in the future add a "how_construct" key being a dictionary
