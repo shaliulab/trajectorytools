@@ -1,9 +1,7 @@
 import os.path
 import logging
 import glob
-
 from .trajectories import Trajectories, import_idtrackerai_dict
-
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -140,6 +138,7 @@ def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
     - the values of the first diccionary for all other keys
     """
     traj_dict_cat = traj_dicts[0].copy()
+
     status, traj_cat = _concatenate_np(
         [traj_dict["trajectories"] for traj_dict in traj_dicts],
         **kwargs
@@ -175,14 +174,29 @@ def pick_w_wo_gaps(session_folder, allow_human=True):
     """Select the best trajectories file
     available in an idtrackerai session
     """
-    trajectories = os.path.join(session_folder, "trajectories")
+    TRAJECTORIES_WO_GAPS = "trajectories_wo_gaps"
+    TRAJECTORIES = "trajectories"
 
     if allow_human:
         pref_index=-1
     else:
         pref_index=0
+    
+    trajectories = os.path.join(session_folder, TRAJECTORIES_WO_GAPS)
+    file = None
 
-    return _pick_trajectory_file(trajectories, pref_index)
+    try:
+        file = _pick_trajectory_file(trajectories, pref_index)
+    
+    except Exception:
+        try:
+            trajectories = os.path.join(session_folder, TRAJECTORIES)
+            file = _pick_trajectory_file(trajectories, pref_index)
+        except Exception as error:
+            logger.warn(error)
+            file = None 
+
+    return file
 
 
 def is_idtrackerai_session(path):
