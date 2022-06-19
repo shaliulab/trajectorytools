@@ -18,9 +18,16 @@ def calculate_center_of_mass(trajectories, params):
     velocity ('_v') and acceleration ('_a')
     :param params: Dictionary of parameters
     """
-    center_of_mass = {
-        k: np.mean(trajectories[k], axis=1) for k in Trajectory.keys_to_copy
-    }
+
+  
+    center_of_mass = {}
+
+    for k in Trajectory.keys_to_copy:
+        if k in Trajectory.spatial_keys:
+            center_of_mass[k] = np.mean(trajectories[k], axis=1)
+        else:
+            center_of_mass[k] = trajectories[k]
+
     return CenterMassTrajectory(center_of_mass, params)
 
 
@@ -98,6 +105,7 @@ def import_idtrackerai_dict(
     """Create Trajectories from a idtracker.ai trajectories dictionary
 
     :param traj_dict: idtracker.ai generated dictionary
+    :param timestamps: array of times, one for each point in the traj_dict
     :param interpolate_nans: whether to interpolate NaNs
     :param center: Whether to center trajectories, using a center estimated
     from the trajectories.
@@ -132,7 +140,23 @@ def import_idtrackerai_dict(
 
 
 class Trajectory:
-    keys_to_copy = ["_s", "_v", "_a", "_t", "_n"]
+
+    spatial_keys = [
+        # coordinates in space
+        "_s",
+        # velocity vector
+        "_v",
+        # acceleration vector
+        "_a",
+    ]
+
+
+    keys_to_copy = spatial_keys + [
+        # timestamps
+        "_t",
+        # ??
+        "_n"
+    ]
     own_params = True
 
     def __init__(self, trajectories, params):
