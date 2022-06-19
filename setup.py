@@ -4,13 +4,13 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="trajectorytools",
-    version="0.3.5-alpha",
+    name="trajectorytools-shaliulab",
+    version="0.3.5",
     description="A tool to study 2D trajectories",
     long_description=long_description,
     url="http://github.com/fjhheras/trajectorytools",
-    author="Francisco J.H. Heras, Francisco Romero Ferrero, Gonzalo G. de Polavieja",
-    author_email="fjhheras@gmail.com",
+    author="Francisco J.H. Heras, Francisco Romero Ferrero, Antonio Ortega, Gonzalo G. de Polavieja",
+    author_email="fjhheras@gmail.com, antonio.ortega@kuleuven.be",
     license="GPL",
     install_requires=["MiniballCpp", "matplotlib", "scikit-learn", "scipy"],
     packages=find_packages(),
