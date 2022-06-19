@@ -1,6 +1,6 @@
 import os.path
 import logging
-import sys
+import glob
 
 from .trajectories import Trajectories, import_idtrackerai_dict
 
@@ -166,7 +166,7 @@ def _pick_trajectory_file(trajectories_folder, pref_index=-1):
     )
 
     if len(trajectory_files) == 0:
-        raise Exception(f"Session {session_folder} has no trajectories")
+        raise Exception(f"{trajectories_folder} has no trajectories")
     else:
         return os.path.join(trajectories_folder, trajectory_files[pref_index])
 
@@ -187,36 +187,43 @@ def pick_w_wo_gaps(session_folder, allow_human=True):
 
 def is_idtrackerai_session(path):
     """Check whether the passed path is an idtrackerai session"""
-    return os.path.exists(os.path.join(path, "video_object.npy"))
+    return os.path.exists(os.path.join(path, "video_object.npy")) and \
+        os.path.exists(os.path.join(path, "trajectories"))
+
 
 
 def get_trajectories(idtrackerai_collection_folder, *args, **kwargs):
-    """Return a list of all trajectory files available
-    in an idtrackerai collection folder
     """
-    """Return a list of all trajectory files available in an idtrackerai collection folder"""
-    file_contents = os.listdir(idtrackerai_collection_folder)
+    Return a list of all trajectory files available
+    in an idtrackerai collection folder
 
-    file_contents = [
-        os.path.join(idtrackerai_collection_folder, folder)
-        for folder in file_contents
-    ]
+    The files are prefixed with the passed idtrackerai_collection_folder path
+    i.e. they are not relative to it    
+    """
+    
+    file_contents = glob.glob(
+        os.path.join(
+            idtrackerai_collection_folder,
+            "*"
+        )
+    )
 
     idtrackerai_sessions = []
-    for folder in file_contents:
+    for folder in sorted(file_contents):
         if is_idtrackerai_session(folder):
-            idtrackerai_sessions.append(folder)
+            idtrackerai_sessions.append(
+                os.path.basename(folder)
+            )
 
     trajectories_paths = {}
-    for session in sorted(idtrackerai_sessions):
-        trajectory_file = pick_w_wo_gaps(session, *args, **kwargs)
-        trajectories_paths[os.path.basename(session)] = trajectory_file
+    for session in idtrackerai_sessions:
+        trajectory_file = pick_w_wo_gaps(os.path.join(
+            idtrackerai_collection_folder, session
+        ), *args, **kwargs)
+        if trajectory_file is not None:
+            trajectories_paths[os.path.basename(session)] = trajectory_file
 
-    trajectories_paths = {
-        k: v for k, v in trajectories_paths.items() if v is not None
-    }
 
-    trajectories_paths = {k: trajectories_paths[k] for k in sorted(list(trajectories_paths.keys()))}
     return trajectories_paths
 
 
