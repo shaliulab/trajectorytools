@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="trajectorytools-shaliulab",
-    version="0.3.5",
+    version="0.3.6",
     description="A tool to study 2D trajectories",
     long_description=long_description,
     url="http://github.com/fjhheras/trajectorytools",
