@@ -105,7 +105,7 @@ def import_idtrackerai_dict(
     """Create Trajectories from a idtracker.ai trajectories dictionary
 
     :param traj_dict: idtracker.ai generated dictionary
-    :param timestamps: array of times, one for each point in the traj_dict
+    :param timestamps: array of times, one for each point in the traj_dict, in s
     :param interpolate_nans: whether to interpolate NaNs
     :param center: Whether to center trajectories, using a center estimated
     from the trajectories.
@@ -429,6 +429,7 @@ class Trajectories(Trajectory):
         """Trajectory from positions
 
         :param t: Positions nd.array.
+        :params timestamps: Time in s
         :param interpolate_nans: whether to interpolate NaNs
         :param smooth_params: Arguments for smoothing (see tt.smooth)
         """
