@@ -7,8 +7,11 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import List
+import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+concat_status = {}
 
 # Utils
 
@@ -78,15 +81,21 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, strict=True)
         last_index = get_last_index(ta)
         first_index = get_first_index(tb)
 
-    if last_index != -1 or first_index != 0:
+    total_n_nan = np.isnan(tb).any(1).sum()
+    frames_with_at_least_a_nan = np.isnan(tb).any(2).any(1).sum()
 
-        logger.warning(
-            "Concatenation between chunks "
-            f"{chunk_id}-{chunk_id+1} will use "
-            f"frame {tb.shape[0] + last_index} from left chunk and "
-            f"and frame {first_index} from right chunk. "
-            "Indices are 0-based"
-        )
+
+    logger.warning(
+        f"{chunk_id},{chunk_id+1}"
+        f",{tb.shape[0] + last_index}"
+        f",{first_index}"
+        f",{total_n_nan}"
+        f",{frames_with_at_least_a_nan}"
+    )
+    concat_status[chunk_id] = (
+        tb.shape[0] + last_index, first_index,
+        total_n_nan, frames_with_at_least_a_nan
+    )
 
     try:
         best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
@@ -111,6 +120,7 @@ def _concatenate_np(t_list: List[np.ndarray], zero_index=0, strict=True) -> np.n
     if not status is True:
         return (status, concatenation_until_now)
     else:
+        assert not np.isnan(t_list[-1]).all()
         try:
             return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk, strict=strict)
         except Exception as error:
@@ -143,6 +153,18 @@ def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
         [traj_dict["trajectories"] for traj_dict in traj_dicts],
         **kwargs
     )
+
+    concat_status_df=pd.DataFrame.from_dict(
+        concat_status,
+        orient="index",
+        columns = ["last_frame", "first_frame", "next_total_nan", "next_frames_with_nan"]
+    )
+    concat_status_df.reset_index(inplace=True)
+    concat_status_df.insert(0, "chunk", concat_status_df["index"])
+    del concat_status_df["index"]
+    concat_status_df.to_csv("concat_status.csv", index=False)
+
+
     traj_dict_cat["trajectories"] = traj_cat
     return status, traj_dict_cat
 
