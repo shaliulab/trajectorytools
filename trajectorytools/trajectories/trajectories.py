@@ -342,8 +342,8 @@ class Trajectory:
     @property
     def distance_to_origin(self):
         return self.distance_to(np.zeros(2))
-
-
+    
+    
     def pad_at_beginning(self, number_of_points):
         
         one_point = np.stack(
@@ -642,3 +642,26 @@ class TrajectoriesWithPoints(Trajectories):
 
     def acceleration_towards_point(self, key):
         return self.acceleration_towards(self.points[key])
+
+
+
+def refer_concatenation_to_first_chunk_available(concatenation):
+    new_concatenation = concatenation[0,1:]
+    chunks = concatenation[:, 0].reshape((-1, 1))
+    
+    for i in range(1, concatenation.shape[0]):
+        
+        resolved_match = concatenation[i, 1:]-1
+        j=i-1
+        while j!=0:
+            resolved_match=concatenation[j, 1:][resolved_match]-1
+            j-=1 
+
+        new_concatenation=np.vstack([
+            new_concatenation,
+            resolved_match+1
+        ])
+    new_concatenation=np.hstack([chunks, new_concatenation])
+     
+    return new_concatenation
+
