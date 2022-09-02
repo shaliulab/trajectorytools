@@ -124,6 +124,12 @@ def import_idtrackerai_dict(
         interpolate_nans=interpolate_nans,
         smooth_params=smooth_params,
     )
+    concatenation = np.concatenate([
+        np.array(traj_dict["chunks"][1:]).reshape((-1, 1)),
+        traj_dict["concatenation"]
+    ], axis=1)
+    
+    traj.concatenation = concatenation
 
     radius, center_ = _radius_and_center_from_traj_dict(traj._s, traj_dict)
     traj.params.update(dict(radius=radius, radius_px=radius, _center=center_))
@@ -338,6 +344,33 @@ class Trajectory:
         return self.distance_to(np.zeros(2))
 
 
+    def pad_at_beginning(self, number_of_points):
+        
+        one_point = np.stack(
+            [
+                [np.nan, np.nan]
+            ] * self.number_of_individuals
+        )
+        
+        padding_points = np.stack(
+            [one_point, ] * number_of_points,
+            axis=0
+        )
+        
+        for key in self.keys_to_copy:
+            print(f"Padding {number_of_points} on key {key}")
+            data = getattr(self, key)
+            
+            setattr(
+                self,
+                key,
+                np.vstack([
+                    padding_points[:, :, :data.shape[2]],
+                    data
+                ])
+            )
+
+
 class CenterMassTrajectory(Trajectory):
     own_params = False  # Parameters are shared with parent
 
@@ -348,6 +381,7 @@ class Trajectories(Trajectory):
         self.center_of_mass = calculate_center_of_mass(
             trajectories, self.params
         )
+        self.concatenation = None
 
     def _dict_to_save(self):
         traj_data = {key: self.__dict__[key] for key in self.keys_to_copy}
