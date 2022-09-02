@@ -71,7 +71,7 @@ def get_first_index(arr):
     return index
 
 
-def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, strict=True):
+def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, best_ids=None, strict=True):
     # Shape of ta, tb: (frames, individuals, 2)
 
     if strict:
@@ -85,48 +85,54 @@ def _concatenate_two_np(ta: np.ndarray, tb: np.ndarray, chunk_id=0, strict=True)
     frames_with_at_least_a_nan = np.isnan(tb).any(2).any(1).sum()
 
 
-    logger.warning(
-        f"{chunk_id},{chunk_id+1}"
-        f",{tb.shape[0] + last_index}"
-        f",{first_index}"
-        f",{total_n_nan}"
-        f",{frames_with_at_least_a_nan}"
-    )
+    # logger.warning(
+    #     f"{chunk_id},{chunk_id+1}"
+    #     f",{tb.shape[0] + last_index}"
+    #     f",{first_index}"
+    #     f",{total_n_nan}"
+    #     f",{frames_with_at_least_a_nan}"
+    # )
     concat_status[chunk_id] = (
         tb.shape[0] + last_index, first_index,
         total_n_nan, frames_with_at_least_a_nan
     )
 
     try:
-        best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
+        local_best_ids = _best_ids(ta[last_index, :], tb[first_index, :])
     except ValueError as error:
         logger.error(
             f"Cannot concatenate frame {ta.shape[0]} and {ta.shape[0]+1}"
         )
         raise error
+    
+    if best_ids is None:
+        best_ids = np.array([local_best_ids]) + 1
+    else:
+        best_ids = np.concatenate([best_ids, np.array([local_best_ids]) + 1], axis=0)
 
-    return True, np.concatenate([ta, tb[:, best_ids, :]], axis=0)
+    return True, np.concatenate([ta, tb[:, local_best_ids, :]], axis=0), best_ids
 
 
-def _concatenate_np(t_list: List[np.ndarray], zero_index=0, strict=True) -> np.ndarray:
+def _concatenate_np(t_list: List[np.ndarray], zero_index=0, best_ids=None, strict=True) -> np.ndarray:
 
     if len(t_list) == 1:
-        return (True, t_list[0])
+        return (True, t_list[0], best_ids)
 
-    status, concatenation_until_now = _concatenate_np(t_list[:-1], zero_index=zero_index, strict=strict)
+    status, concatenation_until_now, best_ids = _concatenate_np(t_list[:-1], zero_index=zero_index, best_ids=best_ids, strict=strict)
 
     last_concat_chunk = len(t_list[:-1])-1+zero_index
 
     if not status is True:
-        return (status, concatenation_until_now)
+        return (status, concatenation_until_now, best_ids)
     else:
         assert not np.isnan(t_list[-1]).all()
         try:
-            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk, strict=strict)
+            return _concatenate_two_np(concatenation_until_now, t_list[-1], chunk_id=last_concat_chunk, best_ids=best_ids, strict=strict)
+            
         except Exception as error:
             logger.error(f"Concatenation error between 0-based chunks {last_concat_chunk} and {last_concat_chunk+1}")
             logger.error(error)
-            return (last_concat_chunk, concatenation_until_now)
+            return (last_concat_chunk, concatenation_until_now, best_ids)
 
 
 # Obtain trajectories from concatenation
@@ -149,11 +155,10 @@ def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
     """
     traj_dict_cat = traj_dicts[0].copy()
 
-    status, traj_cat = _concatenate_np(
+    status, traj_cat, best_ids = _concatenate_np(
         [traj_dict["trajectories"] for traj_dict in traj_dicts],
         **kwargs
     )
-
     concat_status_df=pd.DataFrame.from_dict(
         concat_status,
         orient="index",
@@ -162,11 +167,14 @@ def _concatenate_idtrackerai_dicts(traj_dicts, **kwargs):
     concat_status_df.reset_index(inplace=True)
     concat_status_df.insert(0, "chunk", concat_status_df["index"])
     del concat_status_df["index"]
-    concat_status_df.to_csv("concat_status.csv", index=False)
-
-
+    
+    traj_dict_cat["status"] = concat_status_df
+    traj_dict_cat["concatenation"] = best_ids
     traj_dict_cat["trajectories"] = traj_cat
+    traj_dict_cat["chunks"] = [int(d["chunk"]) for d in traj_dicts]
     return status, traj_dict_cat
+
+
 
 
 def _pick_trajectory_file(trajectories_folder, pref_index=-1):
@@ -285,6 +293,8 @@ def from_several_idtracker_files(
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
+    print(traj_dict["status"])
+    # .to_csv(os.path.join(OUTPUT_FOLDER, "concat_status.csv"), index=False)
     return status, tr
 
 
