@@ -293,8 +293,9 @@ def from_several_idtracker_files(
     tr = import_idtrackerai_dict(traj_dict, **kwargs)
     tr.params["path"] = trajectories_paths
     tr.params["construct_method"] = "from_several_idtracker_files"
-    print(traj_dict["status"])
-    # .to_csv(os.path.join(OUTPUT_FOLDER, "concat_status.csv"), index=False)
+
+    traj_dict["status"].to_csv("concat_status.csv", index=False)
+
     return status, tr
 
 
