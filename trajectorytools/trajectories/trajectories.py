@@ -124,12 +124,14 @@ def import_idtrackerai_dict(
         interpolate_nans=interpolate_nans,
         smooth_params=smooth_params,
     )
-    concatenation = np.concatenate([
-        np.array(traj_dict["chunks"][1:]).reshape((-1, 1)),
-        traj_dict["concatenation"]
-    ], axis=1)
-    
-    traj.concatenation = concatenation
+
+    if "concatenation" in traj_dict:
+        concatenation = np.concatenate([
+            np.array(traj_dict["chunks"][1:]).reshape((-1, 1)),
+            traj_dict["concatenation"]
+        ], axis=1)
+
+        traj.concatenation = concatenation
 
     radius, center_ = _radius_and_center_from_traj_dict(traj._s, traj_dict)
     traj.params.update(dict(radius=radius, radius_px=radius, _center=center_))
@@ -500,6 +502,18 @@ class Trajectories(Trajectory):
                 trajectories["_a"],
                 trajectories["_t"]
             ] = tt.velocity_acceleration_pad(t_smooth, timestamps=timestamps)
+            
+        
+        if timestamps is None:
+            time_params = {
+                "time_unit": 1,  # In frames
+                "time_unit_name": "frames"
+            }
+        else:
+            time_params = {
+                "time_unit": 1,  
+                "time_unit_name": "seconds"
+            }
 
         # TODO: Organise the params dictionary more hierarchically
         # Maybe in the future add a "how_construct" key being a dictionary
@@ -509,8 +523,7 @@ class Trajectories(Trajectory):
             "displacement": displacement,  # Units: pixels
             "length_unit": 1,  # Units: pixels
             "length_unit_name": "px",
-            "time_unit": 1,  # In frames
-            "time_unit_name": "frames",
+            **time_params,
             "interpolate_nans": interpolate_nans,
             "smooth_params": smooth_params,
             "construct_method": "from_positions",
