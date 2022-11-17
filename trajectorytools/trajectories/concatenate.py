@@ -200,7 +200,7 @@ def _pick_trajectory_file(trajectories_folder, pref_index=-1):
         return os.path.join(trajectories_folder, trajectory_files[pref_index])
 
 
-def pick_w_wo_gaps(session_folder, allow_human=True):
+def pick_w_wo_gaps(session_folder, allow_wo_gaps=True, allow_human=True):
     """Select the best trajectories file
     available in an idtrackerai session
     """
@@ -212,19 +212,18 @@ def pick_w_wo_gaps(session_folder, allow_human=True):
     else:
         pref_index=0
     
-    trajectories = os.path.join(session_folder, TRAJECTORIES_WO_GAPS)
-    file = None
-
-    try:
-        file = _pick_trajectory_file(trajectories, pref_index)
+    if not os.path.exists(os.path.join(session_folder, TRAJECTORIES_WO_GAPS)):
+        trajectories_wo_gaps_file=None
+        allow_wo_gaps=False
+    else:
+        trajectories_wo_gaps_file = _pick_trajectory_file(os.path.join(session_folder, TRAJECTORIES_WO_GAPS), pref_index)
     
-    except Exception:
-        try:
-            trajectories = os.path.join(session_folder, TRAJECTORIES)
-            file = _pick_trajectory_file(trajectories, pref_index)
-        except Exception as error:
-            logger.warn(error)
-            file = None 
+    trajectories_file = _pick_trajectory_file(os.path.join(session_folder, TRAJECTORIES), pref_index)
+
+    if allow_wo_gaps:
+        file = sorted([trajectories_wo_gaps_file, trajectories_file], key=lambda x: os.path.getmtime(x))[-1]
+    else:
+        file = trajectories_file
 
     return file
 
